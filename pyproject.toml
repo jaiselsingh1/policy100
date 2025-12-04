@@ -19,6 +19,7 @@ dependencies = [
     "wandb>=0.23.0",
     "ipython>=9.8.0",
     "tyro>=0.9.35",
+    "ipdb>=0.13.13",
 ]
 
 [tool.setuptools.packages.find]

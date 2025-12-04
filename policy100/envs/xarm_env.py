@@ -1,3 +1,4 @@
+import os
 import mujoco
 import numpy as np
 import gymnasium as gym
@@ -5,7 +6,7 @@ from dataclasses import dataclass
 from gymnasium.envs.mujoco.mujoco_env import MujocoEnv
 from gymnasium import spaces
 from pathlib import Path
-from typing import Literal, Dict, Any, Type
+from typing import Literal, Any, Type
 
 # import tasks 
 from policy100.tasks.mug_rack import MugRackTask, MugRackConfig
@@ -59,6 +60,18 @@ class XArmEnv(MujocoEnv):
         self.include_tcp = include_tcp # adding tcp into the obseration vector or not 
         self.include_rel = include_rel # target position - current obj position 
 
+        if model_path is None:
+            root_dir = Path(__file__).resolve().parent.parent
+            
+            path_xarm = root_dir / "assets" / "xarm" / self.entry.xml_file
+            if path_xarm.exists():
+                model_path = str(path_xarm)
+            else:
+                raise ValueError("model_path is not defined")
+
+        # We initialize with a dummy obs space first, then correct it later
+        MujocoEnv.__init__(self, model_path, frame_skip, observation_space=None, **kwargs)
+
         # cache the body ids 
         self._bid_obj = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, self.entry.obj_body_name)
         self._sid_tcp = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, self.entry.tcp_site_name)
@@ -81,46 +94,48 @@ class XArmEnv(MujocoEnv):
         else:
             self._arm_qpos_idx = np.array([], dtype=np.int64)
 
-        # 6. Define Action Space
         # 7 arm joints + 1 gripper actuator
         self.act_dim = len(self._arm_qpos_idx) + 1
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(self.act_dim,), dtype=np.float32)
 
+        # Set observation space now that we can measure it
+        obs = self.get_current_obs()
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=obs.shape, dtype=np.float32)
+
         # initialize the task logic 
         TaskClass = self.entry.task_class
-        ConfigClass = self.entry.conf
+        ConfigClass = self.entry.task_config # Fixed typo here (was self.entry.conf)
         self.task = TaskClass(self, ConfigClass())
 
     def step(self, action):
         a = np.asarray(action, dtype=np.float64)
         self.do_simulation(a, self.frame_skip)
+        
+        # Render check for human mode
+        if self.render_mode == "human":
+            self.render()
+            
         obs = self.get_current_obs()
 
         # reward/success is taken care of by the task 
         reward, info = self.task.reward()
 
-        terminated = bool(info.get("sucess", False))
+        terminated = bool(info.get("success", False)) # Fixed typo "sucess"
         truncated = False
 
         return obs, float(reward), terminated, truncated, info 
     
-    def reset_model(self, seed: int | None = None, options: dict | None = None):
+    def reset_model(self):
         # reset physics to initial XML state
-        self.init_qpos = self.data.qpos.copy()
-        self.init_qvel = self.data.qvel.copy()
         self.set_state(self.init_qpos, self.init_qvel)
 
         # reset Task logic (randomization, spawning, etc.)
-        self.task.reset(seed=seed, randomize=False)
+        self.task.reset(randomize=False)
 
         # sync desired position for controllers (prevents arm snapping on reset)
         if len(self._arm_qpos_idx) > 0:
-            self.q_des = self.data.qpos[self._arm_qpos_idx].copy()
-
-        # initialize observation space on first reset
-        if self.observation_space is None:
-            obs = self.get_current_obs()
-            self.observation_space = spaces.Box(-np.inf, np.inf, shape=obs.shape, dtype=np.float32)
+            # logic for controller reset if needed
+            pass
 
         return self.get_current_obs()
     
@@ -179,8 +194,3 @@ class XArmEnv(MujocoEnv):
             return np.asarray(rel_xyz, dtype=np.float64)
         except Exception:
             return np.asarray(rel_xyz, dtype=np.float64)
-    
-
-
-
-

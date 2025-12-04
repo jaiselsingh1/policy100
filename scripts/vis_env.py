@@ -1,11 +1,13 @@
 import argparse
-from dataclasses import dataclass
-from typing import Literal
 import time
 import numpy as np
 import tyro 
+import gymnasium as gym
+from dataclasses import dataclass
+from typing import Literal
 
-from policy100.envs import MugRackEnv, DishwasherPlateEnv
+# import your package to trigger registration
+import policy100.envs 
 
 @dataclass
 class VisConfig:
@@ -16,20 +18,20 @@ class VisConfig:
 def main() -> None:
     args = tyro.cli(VisConfig)
 
-    if args.env == "mug":
-        env = MugRackEnv(render_mode="human")
-    else:
-        env = DishwasherPlateEnv(render_mode="human")
-
+    # map short name to registered Gym ID
+    env_id = "XArmMugRack-v0" if args.env == "mug" else "XArmDishwasher-v0"
+    
+    env = gym.make(env_id, render_mode="human")
     obs, info = env.reset()
+    
     action = np.zeros(env.action_space.shape, dtype=np.float32)
+    action[1] = 1.0 # arbitrary action
     
     for i in range(args.steps):
         env.step(action)
-        if env.render_mode == "human":
-            env.render()
-            # Sleep a bit to control frame rate
-            time.sleep(0.002)
+        
+        # gym.make loop usually handles rendering, but sleep helps visualization speed
+        time.sleep(0.002)
 
 
 if __name__ == "__main__":

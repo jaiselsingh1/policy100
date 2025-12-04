@@ -1,6 +1,20 @@
-"""Environment subpackage for policy100."""
+from gymnasium.envs.registration import register
+from .xarm_env import XArmEnv
 
-from .mug_rack_env import MugRackEnv
-from .dishwasher_plate_env import DishwasherPlateEnv
+# Register the Mug Rack task
+register(
+    id="XArmMugRack-v0",
+    entry_point="policy100.envs.xarm_env:XArmEnv",
+    max_episode_steps=1000,
+    kwargs={"task_name": "mug_rack"}
+)
 
-__all__ = ["MugRackEnv", "DishwasherPlateEnv"]
+# Register the Dishwasher task
+register(
+    id="XArmDishwasher-v0",
+    entry_point="policy100.envs.xarm_env:XArmEnv",
+    max_episode_steps=1000,
+    kwargs={"task_name": "dishwasher"}
+)
+
+__all__ = ["XArmEnv"]
