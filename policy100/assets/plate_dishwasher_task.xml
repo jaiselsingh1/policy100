@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  Place plate into dishwasher rack
+  
+  Parameter Space Definition:
+  - plate: x, y position + 1 DOF rotation (yaw)
+  - rack: fixed position
+  
+  Range specification: 10cm variation for x,y
+-->
+<mujoco model="dishwasher_plate_task">
+  <compiler angle="radian" meshdir="meshes/" autolimits="true"/>
+  
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast">
+    <flag contact="enable"/>
+  </option>
+
+  <default>
+    <default class="visual">
+      <geom group="2" type="mesh" contype="0" conaffinity="0"/>
+    </default>
+    <default class="collision">
+      <geom group="3" type="mesh"/>
+    </default>
+    <default class="plate">
+      <geom type="cylinder" rgba="0.9 0.9 0.95 1" friction="0.8 0.02 0.01"/>
+    </default>
+    <default class="rack">
+      <geom type="box" rgba="0.3 0.3 0.3 1" friction="0.6 0.01 0.01"/>
+    </default>
+    <default class="table">
+      <geom type="box" rgba="0.6 0.4 0.2 1"/>
+    </default>
+  </default>
+
+  <asset>
+    <!-- Textures for visual variety -->
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.1 0.1 0.1" rgb2="0.2 0.2 0.2" width="512" height="512"/>
+    <material name="grid" texture="grid" texrepeat="8 8" reflectance="0.1"/>
+    <texture name="wood" type="2d" builtin="flat" rgb1="0.6 0.4 0.2" rgb2="0.5 0.35 0.15" width="256" height="256"/>
+    <material name="wood" texture="wood" reflectance="0.05"/>
+  </asset>
+
+  <worldbody>
+    <!-- Ground plane -->
+    <geom name="floor" type="plane" size="2 2 0.1" material="grid" pos="0 0 0"/>
+    
+    <!-- Ambient lighting -->
+    <light name="light0" pos="0 0 3" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+    <light name="light1" pos="1 1 2" dir="-0.5 -0.5 -1" diffuse="0.4 0.4 0.4"/>
+    
+    <!-- Table surface -->
+    <body name="table" pos="0 0 0.38">
+      <geom name="table_top" class="table" size="0.6 0.4 0.02" material="wood"/>
+      <geom name="table_leg1" class="table" pos="-0.5 -0.3 -0.19" size="0.03 0.03 0.17"/>
+      <geom name="table_leg2" class="table" pos="0.5 -0.3 -0.19" size="0.03 0.03 0.17"/>
+      <geom name="table_leg3" class="table" pos="-0.5 0.3 -0.19" size="0.03 0.03 0.17"/>
+      <geom name="table_leg4" class="table" pos="0.5 0.3 -0.19" size="0.03 0.03 0.17"/>
+    </body>
+    
+    <!-- ========== DISHWASHER RACK (FIXED) ========== -->
+    <!-- Position: Right side of table, fixed location -->
+    <body name="dishwasher_rack" pos="0.25 0 0.42">
+      <!-- Rack base -->
+      <geom name="rack_base" class="rack" size="0.15 0.12 0.005" pos="0 0 0"/>
+      
+      <!-- Rack slots (vertical dividers for plates) -->
+      <!-- 5 slots, spaced 5cm apart -->
+      <geom name="slot_0" class="rack" size="0.002 0.10 0.06" pos="-0.10 0 0.06"/>
+      <geom name="slot_1" class="rack" size="0.002 0.10 0.06" pos="-0.05 0 0.06"/>
+      <geom name="slot_2" class="rack" size="0.002 0.10 0.06" pos="0.00 0 0.06"/>
+      <geom name="slot_3" class="rack" size="0.002 0.10 0.06" pos="0.05 0 0.06"/>
+      <geom name="slot_4" class="rack" size="0.002 0.10 0.06" pos="0.10 0 0.06"/>
+      
+      <!-- Rack side walls -->
+      <geom name="rack_wall_left" class="rack" size="0.005 0.12 0.07" pos="-0.145 0 0.07"/>
+      <geom name="rack_wall_right" class="rack" size="0.005 0.12 0.07" pos="0.145 0 0.07"/>
+      <geom name="rack_wall_front" class="rack" size="0.15 0.005 0.07" pos="0 -0.115 0.07"/>
+      <geom name="rack_wall_back" class="rack" size="0.15 0.005 0.07" pos="0 0.115 0.07"/>
+      
+      <!-- Visual marker for target slot (slot 2 = center) -->
+      <site name="target_slot" pos="0.025 0 0.005" size="0.02 0.08 0.001" rgba="0 1 0 0.3" type="box"/>
+    </body>
+    
+    <!-- ========== PLATE (PARAMETERIZABLE) ========== -->
+    <!-- 
+      Initial position controlled by:
+      - plate_x: [-0.15, 0.05] (10cm range, left side of table)
+      - plate_y: [-0.15, 0.15] (30cm range)  
+      - plate_yaw: [0, 2*pi] (1 DOF rotation)
+      
+      Default: x=-0.15, y=0, yaw=0 (flat on table, left side)
+    -->
+    <body name="plate" pos="-0.15 0 0.43">
+      <freejoint name="plate_joint"/>
+      <geom name="plate_body" class="plate" size="0.10 0.015" mass="0.3"/>
+      <!-- Plate rim (slightly raised edge) -->
+      <geom name="plate_rim" type="cylinder" size="0.10 0.003" pos="0 0 0.015" 
+            rgba="0.85 0.85 0.9 1" mass="0.05"/>
+      <!-- Center site for tracking -->
+      <site name="plate_center" pos="0 0 0" size="0.01" rgba="1 0 0 1"/>
+      <!-- Edge sites for grasp points -->
+      <site name="plate_grasp_1" pos="0.09 0 0.01" size="0.008" rgba="0 0 1 0.5"/>
+      <site name="plate_grasp_2" pos="-0.09 0 0.01" size="0.008" rgba="0 0 1 0.5"/>
+      <site name="plate_grasp_3" pos="0 0.09 0.01" size="0.008" rgba="0 0 1 0.5"/>
+      <site name="plate_grasp_4" pos="0 -0.09 0.01" size="0.008" rgba="0 0 1 0.5"/>
+    </body>
+    
+    <!-- ========== ROBOT PLACEHOLDER ========== -->
+    <!-- Include your robot here (xArm7, UR5, Franka, etc.) -->
+    <!-- Example mounting position -->
+    <body name="robot_mount" pos="-0.4 0 0.40">
+      <site name="robot_base" size="0.05" rgba="0.5 0.5 0.5 0.3"/>
+    </body>
+    
+  </worldbody>
+  
+  <!-- Sensors for state observation -->
+  <sensor>
+    <framepos name="plate_pos" objtype="site" objname="plate_center"/>
+    <framequat name="plate_quat" objtype="site" objname="plate_center"/>
+    <framelinvel name="plate_linvel" objtype="site" objname="plate_center"/>
+    <frameangvel name="plate_angvel" objtype="site" objname="plate_center"/>
+  </sensor>
+  
+  <!-- Keyframes for demonstration generation -->
+  <keyframe>
+    <!-- Initial state: plate flat on table, left side -->
+    <key name="initial" 
+         qpos="-0.15 0 0.43 1 0 0 0"
+         ctrl=""/>
+    
+    <!-- Grasped state: plate lifted -->
+    <key name="grasped" 
+         qpos="-0.15 0 0.55 1 0 0 0"
+         ctrl=""/>
+    
+    <!-- Pre-insert: plate rotated 90deg, above rack -->
+    <key name="pre_insert" 
+         qpos="0.25 0 0.55 0.707 0 0.707 0"
+         ctrl=""/>
+    
+    <!-- Inserted: plate in slot (rotated, lowered) -->
+    <key name="inserted" 
+         qpos="0.275 0 0.48 0.707 0 0.707 0"
+         ctrl=""/>
+  </keyframe>
+
+</mujoco>

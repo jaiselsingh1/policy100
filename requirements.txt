@@ -1,0 +1,8 @@
+gymnasium[mujoco]>=1.2.2
+mujoco>=3.3.7
+numpy>=2.3.4
+torch>=2.9.0
+stable-baselines3>=2.7.0
+tqdm>=4.67.1
+imageio[ffmpeg]>=2.37.2
+wandb>=0.23.0

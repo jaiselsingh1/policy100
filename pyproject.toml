@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "policy100"
+version = "0.1.0"
+description = "Lightweight MuJoCo task envs for mug-on-rack and dishwasher-plate tasks"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "gymnasium[mujoco]>=1.2.2",
+    "mujoco>=3.3.7",
+    "numpy>=2.3.4",
+    "torch>=2.9.0",
+    "stable-baselines3>=2.7.0",
+    "tqdm>=4.67.1",
+    "imageio[ffmpeg]>=2.37.2",
+    "wandb>=0.23.0",
+    "ipython>=9.8.0",
+    "tyro>=0.9.35",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["policy100"]
+
+[tool.uv]
+package = true
