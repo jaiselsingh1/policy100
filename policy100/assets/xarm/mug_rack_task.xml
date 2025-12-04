@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+
+  Parameter Space:
+    - mug: x ∈ [0.25, 0.45], y ∈ [-0.15, 0.15], yaw ∈ [0, 2π]
+    - rack: fixed at (0.45, 0.2, 0.60)
+-->
+<mujoco model="xarm7_mug_rack">
+  <compiler angle="radian" autolimits="true" eulerseq="xyz"/>
+  
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" cone="elliptic">
+    <flag contact="enable" multiccd="enable"/>
+  </option>
+  
+  <!-- Include xArm7 with gripper from URDF -->
+  <include file="xarm7_with_gripper.urdf"/>
+
+  <default>
+    <default class="mug">
+      <geom rgba="0.75 0.25 0.2 1" friction="0.7 0.02 0.01" solimp="0.95 0.99 0.001" solref="0.002 1"/>
+    </default>
+    <default class="rack">
+      <geom rgba="0.25 0.25 0.25 1" friction="0.5 0.01 0.01"/>
+    </default>
+    <default class="hook">
+      <geom rgba="0.5 0.5 0.5 1" friction="0.4 0.01 0.01"/>
+    </default>
+    <default class="table">
+      <geom type="box" rgba="0.55 0.45 0.35 1"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="512" height="512"/>
+    <material name="grid" texture="grid" texrepeat="8 8" reflectance="0.1"/>
+    <texture name="wood" type="2d" builtin="flat" rgb1="0.55 0.45 0.35" rgb2="0.5 0.4 0.3" width="256" height="256"/>
+    <material name="wood" texture="wood" reflectance="0.05"/>
+    <texture name="ceramic" type="2d" builtin="gradient" rgb1="0.75 0.25 0.2" rgb2="0.55 0.15 0.1" width="256" height="256"/>
+    <material name="ceramic" texture="ceramic" reflectance="0.12"/>
+  </asset>
+
+  <worldbody>
+    <!-- Ground -->
+    <geom name="floor" type="plane" size="2 2 0.1" material="grid" pos="0 0 0"/>
+    
+    <!-- Lighting -->
+    <light name="light0" pos="0 0 2.5" dir="0 0 -1" diffuse="0.8 0.8 0.8" specular="0.3 0.3 0.3"/>
+    <light name="light1" pos="1 1 2" dir="-0.4 -0.4 -0.8" diffuse="0.5 0.5 0.5"/>
+    
+    <!-- ========== TABLE ========== -->
+    <body name="table" pos="0.4 0 0.35">
+      <geom name="table_top" class="table" size="0.35 0.45 0.025" material="wood"/>
+      <geom name="table_leg1" class="table" size="0.04 0.04 0.175" pos="-0.28 -0.38 -0.2"/>
+      <geom name="table_leg2" class="table" size="0.04 0.04 0.175" pos="0.28 -0.38 -0.2"/>
+      <geom name="table_leg3" class="table" size="0.04 0.04 0.175" pos="-0.28 0.38 -0.2"/>
+      <geom name="table_leg4" class="table" size="0.04 0.04 0.175" pos="0.28 0.38 -0.2"/>
+    </body>
+    
+    <!-- ========== MUG RACK (FIXED) ========== -->
+    <!-- Mounted on a vertical stand -->
+    <body name="rack_stand" pos="0.45 0.3 0">
+      <!-- Vertical pole -->
+      <geom name="stand_pole" class="rack" type="cylinder" size="0.02 0.35" pos="0 0 0.35"/>
+      <!-- Base -->
+      <geom name="stand_base" class="rack" type="cylinder" size="0.08 0.01" pos="0 0 0.01"/>
+      
+      <!-- Horizontal bar with hooks -->
+      <body name="mug_rack" pos="0 0 0.60">
+        <!-- Horizontal bar -->
+        <geom name="rack_bar" class="rack" type="cylinder" size="0.01 0.15" euler="1.5708 0 0"/>
+        
+        <!-- Hook 1 -->
+        <body name="hook_1" pos="0 -0.10 0">
+          <geom name="hook_1_stem" class="hook" type="cylinder" size="0.005 0.02" pos="0 0 -0.02"/>
+          <geom name="hook_1_curve" class="hook" type="capsule" size="0.005 0.012" pos="0.012 0 -0.04" euler="0 1.5708 0"/>
+          <site name="hook_1_target" pos="0.015 0 -0.035" size="0.012" rgba="0 1 0 0.3"/>
+        </body>
+        
+        <!-- Hook 2 (PRIMARY TARGET) -->
+        <body name="hook_2" pos="0 -0.033 0">
+          <geom name="hook_2_stem" class="hook" type="cylinder" size="0.005 0.02" pos="0 0 -0.02"/>
+          <geom name="hook_2_curve" class="hook" type="capsule" size="0.005 0.012" pos="0.012 0 -0.04" euler="0 1.5708 0"/>
+          <site name="hook_2_target" pos="0.015 0 -0.035" size="0.012" rgba="0 1 0 0.6"/>
+        </body>
+        
+        <!-- Hook 3 -->
+        <body name="hook_3" pos="0 0.033 0">
+          <geom name="hook_3_stem" class="hook" type="cylinder" size="0.005 0.02" pos="0 0 -0.02"/>
+          <geom name="hook_3_curve" class="hook" type="capsule" size="0.005 0.012" pos="0.012 0 -0.04" euler="0 1.5708 0"/>
+          <site name="hook_3_target" pos="0.015 0 -0.035" size="0.012" rgba="0 1 0 0.3"/>
+        </body>
+        
+        <!-- Hook 4 -->
+        <body name="hook_4" pos="0 0.10 0">
+          <geom name="hook_4_stem" class="hook" type="cylinder" size="0.005 0.02" pos="0 0 -0.02"/>
+          <geom name="hook_4_curve" class="hook" type="capsule" size="0.005 0.012" pos="0.012 0 -0.04" euler="0 1.5708 0"/>
+          <site name="hook_4_target" pos="0.015 0 -0.035" size="0.012" rgba="0 1 0 0.3"/>
+        </body>
+      </body>
+    </body>
+    
+    <!-- ========== MUG (FREE BODY - PARAMETERIZABLE) ========== -->
+    <!-- 
+      Parameter space:
+        x: [0.25, 0.45]
+        y: [-0.15, 0.15]
+        yaw: [0, 2π]
+      Default: x=0.35, y=-0.1, standing upright on table
+    -->
+    <body name="mug" pos="0.35 -0.1 0.395">
+      <freejoint name="mug_joint"/>
+      
+      <!-- Mug body (cylindrical) -->
+      <geom name="mug_base" class="mug" type="cylinder" size="0.035 0.002" pos="0 0 0" mass="0.04" material="ceramic"/>
+      <geom name="mug_wall" class="mug" type="cylinder" size="0.035 0.04" pos="0 0 0.042" mass="0.12" material="ceramic"/>
+      <!-- Inner cavity (visual) -->
+      <geom name="mug_inner" type="cylinder" size="0.028 0.038" pos="0 0 0.044" rgba="0.25 0.12 0.08 1" mass="0.0" contype="0" conaffinity="0"/>
+      
+      <!-- Handle -->
+      <body name="mug_handle" pos="0.035 0 0.045">
+        <geom name="handle_top" class="mug" type="capsule" size="0.006 0.012" pos="0.012 0 0.018" euler="0 1.5708 0" mass="0.015"/>
+        <geom name="handle_mid" class="mug" type="capsule" size="0.006 0.020" pos="0.020 0 0" mass="0.015"/>
+        <geom name="handle_bot" class="mug" type="capsule" size="0.006 0.012" pos="0.012 0 -0.018" euler="0 1.5708 0" mass="0.015"/>
+        
+        <!-- Handle opening (where hook goes through) -->
+        <site name="handle_hole" pos="0.020 0 0" size="0.010" rgba="1 1 0 0.6" type="sphere"/>
+      </body>
+      
+      <!-- Tracking sites -->
+      <site name="mug_center" pos="0 0 0.04" size="0.008" rgba="1 0 0 0.8"/>
+      <site name="mug_top" pos="0 0 0.082" size="0.006" rgba="0 1 1 0.5"/>
+      <site name="mug_bottom" pos="0 0 0" size="0.006" rgba="0 1 1 0.5"/>
+    </body>
+  </worldbody>
+  
+  <!-- ========== ACTUATORS ========== -->
+  <actuator>
+    <!-- Arm joints -->
+    <position name="act_joint1" joint="joint1" kp="2000" ctrlrange="-6.28 6.28"/>
+    <position name="act_joint2" joint="joint2" kp="2000" ctrlrange="-2.059 2.0944"/>
+    <position name="act_joint3" joint="joint3" kp="1500" ctrlrange="-6.28 6.28"/>
+    <position name="act_joint4" joint="joint4" kp="1500" ctrlrange="-0.19198 3.927"/>
+    <position name="act_joint5" joint="joint5" kp="1000" ctrlrange="-6.28 6.28"/>
+    <position name="act_joint6" joint="joint6" kp="500" ctrlrange="-1.69297 3.14159"/>
+    <position name="act_joint7" joint="joint7" kp="500" ctrlrange="-6.28 6.28"/>
+    
+    <!-- Gripper -->
+    <position name="act_gripper" joint="drive_joint" kp="200" ctrlrange="0 0.85"/>
+  </actuator>
+  
+  <!-- ========== EQUALITY CONSTRAINTS ========== -->
+  <equality>
+    <joint joint1="drive_joint" joint2="left_finger_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="left_inner_knuckle_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="right_outer_knuckle_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="right_finger_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="right_inner_knuckle_joint" polycoef="0 1 0 0 0"/>
+  </equality>
+  
+  <!-- ========== SENSORS ========== -->
+  <sensor>
+    <!-- Mug state -->
+    <framepos name="mug_pos" objtype="site" objname="mug_center"/>
+    <framequat name="mug_quat" objtype="site" objname="mug_center"/>
+    <framelinvel name="mug_linvel" objtype="site" objname="mug_center"/>
+    
+    <!-- Handle position (for hook alignment) -->
+    <framepos name="handle_pos" objtype="site" objname="handle_hole"/>
+    
+    <!-- Target hook position -->
+    <framepos name="hook_target_pos" objtype="site" objname="hook_2_target"/>
+    
+    <!-- End-effector -->
+    <framepos name="tcp_pos" objtype="body" objname="link_tcp"/>
+    <framequat name="tcp_quat" objtype="body" objname="link_tcp"/>
+  </sensor>
+  
+  <!-- ========== KEYFRAMES ========== -->
+  <keyframe>
+    <key name="home" 
+         qpos="0 0 0 1.57 0 1.57 0   0   0 0 0 0 0   0.35 -0.1 0.395 1 0 0 0"/>
+    
+    <key name="pre_grasp"
+         qpos="0 0.3 0 1.2 0 1.0 0   0.8   0.8 0.8 0.8 0.8 0.8   0.35 -0.1 0.395 1 0 0 0"/>
+  </keyframe>
+</mujoco>

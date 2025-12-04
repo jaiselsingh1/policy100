@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--   
+  The include path assumes:
+    this_file.xml and xarm7_with_gripper.urdf are in the same folder
+    xarm_description/ and xarm_gripper/ folders are also there
+  
+  Parameter Space:
+    - plate: x ∈ [0.25, 0.45], y ∈ [-0.15, 0.15], yaw ∈ [0, 2π]
+    - rack: fixed at (0.5, 0.25, 0.42)
+-->
+<mujoco model="xarm7_dishwasher_plate">
+  <compiler angle="radian" autolimits="true" eulerseq="xyz"/>
+  
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" cone="elliptic">
+    <flag contact="enable" multiccd="enable"/>
+  </option>
+  
+  <!-- Include xArm7 with gripper from URDF -->
+  <include file="xarm7_with_gripper.urdf"/>
+
+  <default>
+    <default class="plate">
+      <geom type="cylinder" rgba="0.9 0.9 0.95 1" friction="0.8 0.02 0.01" solimp="0.95 0.99 0.001" solref="0.002 1"/>
+    </default>
+    <default class="rack">
+      <geom type="box" rgba="0.3 0.3 0.3 1" friction="0.6 0.01 0.01"/>
+    </default>
+    <default class="table">
+      <geom type="box" rgba="0.55 0.45 0.35 1"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="512" height="512"/>
+    <material name="grid" texture="grid" texrepeat="8 8" reflectance="0.1"/>
+    <texture name="wood" type="2d" builtin="flat" rgb1="0.55 0.45 0.35" rgb2="0.5 0.4 0.3" width="256" height="256"/>
+    <material name="wood" texture="wood" reflectance="0.05"/>
+  </asset>
+
+  <worldbody>
+    <!-- Ground -->
+    <geom name="floor" type="plane" size="2 2 0.1" material="grid" pos="0 0 0"/>
+    
+    <!-- Lighting -->
+    <light name="light0" pos="0 0 2.5" dir="0 0 -1" diffuse="0.8 0.8 0.8" specular="0.3 0.3 0.3"/>
+    <light name="light1" pos="1 1 2" dir="-0.4 -0.4 -0.8" diffuse="0.5 0.5 0.5"/>
+    
+    <!-- ========== TABLE ========== -->
+    <body name="table" pos="0.4 0 0.35">
+      <geom name="table_top" class="table" size="0.4 0.5 0.025" material="wood"/>
+      <geom name="table_leg1" class="table" size="0.04 0.04 0.175" pos="-0.32 -0.42 -0.2"/>
+      <geom name="table_leg2" class="table" size="0.04 0.04 0.175" pos="0.32 -0.42 -0.2"/>
+      <geom name="table_leg3" class="table" size="0.04 0.04 0.175" pos="-0.32 0.42 -0.2"/>
+      <geom name="table_leg4" class="table" size="0.04 0.04 0.175" pos="0.32 0.42 -0.2"/>
+    </body>
+    
+    <!-- ========== DISHWASHER RACK (FIXED) ========== -->
+    <body name="dishwasher_rack" pos="0.5 0.25 0.42">
+      <!-- Rack base -->
+      <geom name="rack_base" class="rack" size="0.12 0.10 0.004"/>
+      
+      <!-- Vertical slot dividers (5 slots for plates) -->
+      <geom name="slot_0" class="rack" size="0.002 0.08 0.055" pos="-0.08 0 0.055"/>
+      <geom name="slot_1" class="rack" size="0.002 0.08 0.055" pos="-0.04 0 0.055"/>
+      <geom name="slot_2" class="rack" size="0.002 0.08 0.055" pos="0.00 0 0.055"/>
+      <geom name="slot_3" class="rack" size="0.002 0.08 0.055" pos="0.04 0 0.055"/>
+      <geom name="slot_4" class="rack" size="0.002 0.08 0.055" pos="0.08 0 0.055"/>
+      
+      <!-- Rack walls -->
+      <geom name="rack_wall_left" class="rack" size="0.004 0.10 0.06" pos="-0.116 0 0.06"/>
+      <geom name="rack_wall_right" class="rack" size="0.004 0.10 0.06" pos="0.116 0 0.06"/>
+      <geom name="rack_wall_front" class="rack" size="0.12 0.004 0.06" pos="0 -0.096 0.06"/>
+      <geom name="rack_wall_back" class="rack" size="0.12 0.004 0.06" pos="0 0.096 0.06"/>
+      
+      <!-- Target site (center slot) -->
+      <site name="target_slot" pos="0.02 0 0.01" size="0.015 0.06 0.002" rgba="0 1 0 0.4" type="box"/>
+    </body>
+    
+    <!-- ========== PLATE (FREE BODY - PARAMETERIZABLE) ========== -->
+    <!-- 
+      Parameter space:
+        x: [0.25, 0.45] - in front of robot, on table
+        y: [-0.15, 0.15] - side to side
+        yaw: [0, 2π] - rotation about z
+      Default: x=0.35, y=-0.1, yaw=0 (flat on table, left of center)
+    -->
+    <body name="plate" pos="0.35 -0.1 0.395">
+      <freejoint name="plate_joint"/>
+      <!-- Main plate body -->
+      <geom name="plate_base" class="plate" size="0.09 0.012" mass="0.25"/>
+      <!-- Raised rim -->
+      <geom name="plate_rim" type="cylinder" size="0.09 0.004" pos="0 0 0.012" rgba="0.85 0.85 0.9 1" mass="0.05"/>
+      
+      <!-- Sites for tracking and grasping -->
+      <site name="plate_center" pos="0 0 0.008" size="0.008" rgba="1 0 0 0.8"/>
+      <site name="plate_edge_x+" pos="0.08 0 0.008" size="0.006" rgba="0 0 1 0.5"/>
+      <site name="plate_edge_x-" pos="-0.08 0 0.008" size="0.006" rgba="0 0 1 0.5"/>
+      <site name="plate_edge_y+" pos="0 0.08 0.008" size="0.006" rgba="0 0 1 0.5"/>
+      <site name="plate_edge_y-" pos="0 -0.08 0.008" size="0.006" rgba="0 0 1 0.5"/>
+    </body>
+  </worldbody>
+  
+  <!-- ========== ACTUATORS ========== -->
+  <!-- 
+    The URDF defines joints, but we need to add MuJoCo actuators.
+    xArm7: joint1-7 (arm)
+    Gripper: drive_joint (controls all fingers via mimic/equality)
+  -->
+  <actuator>
+    <!-- Arm joints - position control -->
+    <position name="act_joint1" joint="joint1" kp="2000" ctrlrange="-6.28 6.28"/>
+    <position name="act_joint2" joint="joint2" kp="2000" ctrlrange="-2.059 2.0944"/>
+    <position name="act_joint3" joint="joint3" kp="1500" ctrlrange="-6.28 6.28"/>
+    <position name="act_joint4" joint="joint4" kp="1500" ctrlrange="-0.19198 3.927"/>
+    <position name="act_joint5" joint="joint5" kp="1000" ctrlrange="-6.28 6.28"/>
+    <position name="act_joint6" joint="joint6" kp="500" ctrlrange="-1.69297 3.14159"/>
+    <position name="act_joint7" joint="joint7" kp="500" ctrlrange="-6.28 6.28"/>
+    
+    <!-- Gripper - single actuator drives all fingers -->
+    <position name="act_gripper" joint="drive_joint" kp="200" ctrlrange="0 0.85"/>
+  </actuator>
+  
+  <!-- ========== EQUALITY CONSTRAINTS ========== -->
+  <!-- Mimic joints for gripper (from URDF mimic definitions) -->
+  <equality>
+    <joint joint1="drive_joint" joint2="left_finger_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="left_inner_knuckle_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="right_outer_knuckle_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="right_finger_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="drive_joint" joint2="right_inner_knuckle_joint" polycoef="0 1 0 0 0"/>
+  </equality>
+  
+  <!-- ========== SENSORS ========== -->
+  <sensor>
+    <!-- Plate state -->
+    <framepos name="plate_pos" objtype="site" objname="plate_center"/>
+    <framequat name="plate_quat" objtype="site" objname="plate_center"/>
+    <framelinvel name="plate_linvel" objtype="site" objname="plate_center"/>
+    
+    <!-- End-effector state -->
+    <framepos name="tcp_pos" objtype="body" objname="link_tcp"/>
+    <framequat name="tcp_quat" objtype="body" objname="link_tcp"/>
+    
+    <!-- Joint positions -->
+    <jointpos name="joint_positions" joint="joint1"/>
+  </sensor>
+  
+  <!-- ========== KEYFRAMES ========== -->
+  <!-- 
+    qpos order: joint1-7 (7), drive_joint (1), gripper mimic joints (5), plate (7)
+    Total: 7 + 1 + 5 + 7 = 20 (but mimic joints are constrained)
+  -->
+  <keyframe>
+    <!-- Home position - arm up, gripper open, plate on table -->
+    <key name="home" 
+         qpos="0 0 0 1.57 0 1.57 0   0   0 0 0 0 0   0.35 -0.1 0.395 1 0 0 0"/>
+    
+    <!-- Ready to grasp - arm positioned over plate -->
+    <key name="pre_grasp"
+         qpos="0 0.3 0 1.2 0 1.0 0   0.8   0.8 0.8 0.8 0.8 0.8   0.35 -0.1 0.395 1 0 0 0"/>
+  </keyframe>
+</mujoco>
