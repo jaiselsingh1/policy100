@@ -1,0 +1,40 @@
+<mujoco model="xarm7_dishwasher_task">
+  <include file="xarm7.xml"/>
+
+  <statistic center="0.3 0 0.4" extent="0.8"/>
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture name="texplane" type="2d" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.1 0.15 0.2" width="512" height="512" mark="cross" markrgb="0.8 0.8 0.8"/>
+    <material name="matplane" texture="texplane" texrepeat="2 2" texuniform="true" reflectance="0.3" shininess="0.5"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" pos="0 0 -0.75" size="0 0 0.05" type="plane" material="matplane"/>
+
+    <body name="table_body" pos="0.3 0 0.10">
+       <geom name="table_top" type="box" size="0.4 0.4 0.02" rgba="0.6 0.5 0.4 1"/>
+       <geom name="leg1" type="box" size="0.02 0.02 0.425" pos="-0.38 -0.38 -0.445" rgba="0.2 0.2 0.2 1"/>
+       <geom name="leg2" type="box" size="0.02 0.02 0.425" pos="0.38 -0.38 -0.445"  rgba="0.2 0.2 0.2 1"/>
+       <geom name="leg3" type="box" size="0.02 0.02 0.425" pos="-0.38 0.38 -0.445"  rgba="0.2 0.2 0.2 1"/>
+       <geom name="leg4" type="box" size="0.02 0.02 0.425" pos="0.38 0.38 -0.445"   rgba="0.2 0.2 0.2 1"/>
+    </body>
+
+    <body name="plate" pos="0.5 0 0.13">
+      <freejoint/>
+      <geom type="cylinder" size="0.085 0.01" rgba="0.9 0.9 0.95 1" class="visual"/>
+      <geom type="cylinder" size="0.085 0.01" rgba="0.9 0.9 0.95 1" friction="1 0.005 0.0001"/>
+      
+      <site name="plate_center" pos="0 0 0" size="0.01" rgba="1 0 0 0.5"/>
+    </body>
+
+    <body name="rack" pos="0.5 0.3 0.13">
+       <geom type="box" size="0.1 0.1 0.05" rgba="0.3 0.3 0.3 1"/>
+       <site name="target_slot" pos="0 0 0.06" size="0.01" rgba="0 1 0 1"/>
+    </body>
+  </worldbody>
+</mujoco>

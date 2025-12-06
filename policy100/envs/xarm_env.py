@@ -33,7 +33,8 @@ TASK_CONFIGS = {
         target_site_name="hook_2_target",
     ),
     "dishwasher": TaskRegistryEntry(
-        xml_file="plate_dishwasher_task.xml",
+       #xml_file="plate_dishwasher_task.xml",
+        xml_file="plate_dishwasher_mjcf.xml", 
         task_class=DishwasherPlateTask,
         task_config=DishwasherPlateConfig,
         obj_body_name="plate",
