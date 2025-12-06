@@ -118,7 +118,13 @@
          place the plate flat on top of it. This makes the initial grasp more
          challenging because the robot must reach across the table. -->
     <geom name="plate_stand" type="box" size="0.04 0.02 0.03" pos="0.30 -0.25 0.03" rgba="0.5 0.5 0.5 1"/>
-    <body name="plate" pos="0.30 -0.25 0.06">
+    <!--
+      The plate now leans against the stand instead of lying flat.  We rotate the
+      plate body about its local x‑axis by 45° (0.7854 rad) so that it rests on
+      the stand.  This orientation makes one edge of the plate contact the
+      stand, giving the gripper room to grasp the rim.
+    -->
+    <body name="plate" pos="0.30 -0.25 0.06" euler="0.785398 0 0">
       <freejoint name="plate_joint"/>
       <geom name="plate_base" class="plate" type="cylinder" size="0.085 0.010" mass="0.22"/>
       <geom name="plate_rim" type="cylinder" size="0.085 0.004" pos="0 0 0.010" rgba="0.88 0.88 0.92 1" mass="0.04"/>

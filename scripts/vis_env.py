@@ -24,12 +24,11 @@ def main() -> None:
     env = gym.make(env_id, render_mode="human")
     obs, info = env.reset()
     
-    action = np.zeros(env.action_space.shape, dtype=np.float32)
-    action[1] = 1.0 # arbitrary action
-    
+    action = np.zeros(env.action_space.shape, dtype=np.float32)    
+    print(action)
     for i in range(args.steps):
         env.step(action)
-        
+        # now let's reset the env as well
         # gym.make loop usually handles rendering, but sleep helps visualization speed
         time.sleep(0.002)
 

@@ -30,21 +30,22 @@ class DishwasherPlateTask:
         self._dadr_plate = env._dadr_obj
 
     def reset(self, seed: Optional[int] = None, randomize: bool = False):
-        # called from environment to reset the task (including placing the plate on the starting pos)
         if seed is not None:
             np.random.seed(seed)
 
-        # no randomization right now but can be added here 
-        start_pos = np.array([0.3, -0.2, 0.02])
-        start_pos_world = self.env._table_to_world(start_pos)
-        # reset the plate joint 
-        self.env.data.qpos[self._qadr_plate:self._qadr_plate+3] = start_pos_world
-        self.env.data.qpos[self._qadr_plate+3:self._qadr_plate+7] = np.array([1.0, 0.0, 0.0, 0.0])
-        # Reset velocity to zero
-        self.env.data.qvel[self._dadr_plate:self._dadr_plate+6] = 0.0
-        
-        # Forward dynamics to update site positions immediately
+        # Copy the initial pose from the XML (stored in env.init_qpos)
+        default_pose = self.env.init_qpos[self._qadr_plate : self._qadr_plate + 7]
+        self.env.data.qpos[self._qadr_plate : self._qadr_plate + 7] = default_pose
+
+        # Optionally apply a position offset if you want to move the plate
+        # start_pos = np.array([...])  # relative to the table
+        # start_pos_world = self.env._table_to_world(start_pos)
+        # self.env.data.qpos[self._qadr_plate : self._qadr_plate + 3] = start_pos_world
+
+        # Zero velocities and forward the model
+        self.env.data.qvel[self._dadr_plate : self._dadr_plate + 6] = 0.0
         mujoco.mj_forward(self.env.model, self.env.data)
+
 
     def reward(self) -> Tuple[float, Dict[str, Any]]:
         """
