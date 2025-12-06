@@ -37,11 +37,6 @@ class DishwasherPlateTask:
         default_pose = self.env.init_qpos[self._qadr_plate : self._qadr_plate + 7]
         self.env.data.qpos[self._qadr_plate : self._qadr_plate + 7] = default_pose
 
-        # Optionally apply a position offset if you want to move the plate
-        # start_pos = np.array([...])  # relative to the table
-        # start_pos_world = self.env._table_to_world(start_pos)
-        # self.env.data.qpos[self._qadr_plate : self._qadr_plate + 3] = start_pos_world
-
         # Zero velocities and forward the model
         self.env.data.qvel[self._dadr_plate : self._dadr_plate + 6] = 0.0
         mujoco.mj_forward(self.env.model, self.env.data)
@@ -51,7 +46,6 @@ class DishwasherPlateTask:
         """
         Calculates the reward based on the state of the plate and target.
         """
-        # --- 1. Get Physics Data ---
         plate_pos = self.env.data.site_xpos[self._sid_plate]
         target_pos = self.env.data.site_xpos[self._sid_target]
         
