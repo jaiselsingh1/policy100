@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Robot: xArm7 with gripper 
+  Robot: xArm7 with gripper - HIGH FIDELITY VERSION
   
   Mesh locations (relative to assets/ folder):
     - Arm meshes: xarm/xarm_description/meshes/xarm7/visual/
@@ -113,8 +113,12 @@
       <site name="target_slot" pos="0.016 0 0.01" size="0.012 0.05 0.003" rgba="0 1 0 0.4" type="box"/>
     </body>
     
-    <!-- PLATE -->
-    <body name="plate" pos="0.40 -0.10 0.010">
+    <!-- PLATE STAND AND PLATE -->
+    <!-- Move the plate stand to the opposite side of the table along the y‑axis and
+         place the plate flat on top of it. This makes the initial grasp more
+         challenging because the robot must reach across the table. -->
+    <geom name="plate_stand" type="box" size="0.04 0.02 0.03" pos="0.30 -0.25 0.03" rgba="0.5 0.5 0.5 1"/>
+    <body name="plate" pos="0.30 -0.25 0.06">
       <freejoint name="plate_joint"/>
       <geom name="plate_base" class="plate" type="cylinder" size="0.085 0.010" mass="0.22"/>
       <geom name="plate_rim" type="cylinder" size="0.085 0.004" pos="0 0 0.010" rgba="0.88 0.88 0.92 1" mass="0.04"/>
