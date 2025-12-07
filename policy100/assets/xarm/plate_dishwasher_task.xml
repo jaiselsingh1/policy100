@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Robot: xArm7 with gripper - HIGH FIDELITY VERSION
+  Robot: xArm7 with gripper
   
-  Mesh locations (relative to assets/ folder):
-    - Arm meshes: xarm/xarm_description/meshes/xarm7/visual/
-    - Gripper meshes: xarm/xarm_gripper/meshes/
+  CHANGES:
+  1. Plate tilted at 45° leaning against a small stand (GRASPABLE)
+  2. Positioned to avoid interpenetration
+  3. Stand is small so gripper can access plate rim
+  
+  The tilted plate exposes the rim for the gripper to grasp from the side.
   
   COORDINATE SYSTEM:
     - Origin (0,0,0) = Robot base center, ON the table surface
     - +X = forward (toward objects)
     - +Y = left  
     - +Z = up
-    
-  Table surface is at Z=0 (robot mounted on table)
 -->
 <mujoco model="xarm7_plate_dishwasher_task">
-  <!-- meshdir points to xarm/ folder, then we use relative paths -->
   <compiler angle="radian" autolimits="true" meshdir=""/>
   
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" cone="elliptic">
@@ -41,7 +41,7 @@
     <material name="dark_gray" rgba="0.4 0.4 0.4 1"/>
     <material name="black" rgba="0.2 0.2 0.2 1"/>
     
-    <!-- ARM MESHES (from xarm_description/meshes/xarm7/visual/) -->
+    <!-- ARM MESHES -->
     <mesh name="link_base" file="xarm_description/meshes/xarm7/visual/link_base.stl"/>
     <mesh name="link1" file="xarm_description/meshes/xarm7/visual/link1.stl"/>
     <mesh name="link2" file="xarm_description/meshes/xarm7/visual/link2.stl"/>
@@ -51,7 +51,7 @@
     <mesh name="link6" file="xarm_description/meshes/xarm7/visual/link6.stl"/>
     <mesh name="link7" file="xarm_description/meshes/xarm7/visual/link7.stl"/>
     
-    <!-- GRIPPER MESHES (from xarm_gripper/meshes/) -->
+    <!-- GRIPPER MESHES -->
     <mesh name="gripper_base" file="xarm_gripper/meshes/base_link.stl"/>
     <mesh name="left_finger" file="xarm_gripper/meshes/left_finger.stl"/>
     <mesh name="right_finger" file="xarm_gripper/meshes/right_finger.stl"/>
@@ -73,7 +73,8 @@
       <geom rgba="0.5 0.5 0.5 1" friction="1.2 0.05 0.01" solimp="0.95 0.99 0.001" solref="0.004 1"/>
     </default>
     <default class="plate">
-      <geom rgba="0.92 0.92 0.96 1" friction="0.8 0.02 0.01" solimp="0.95 0.99 0.001" solref="0.002 1"/>
+      <geom rgba="0.92 0.92 0.96 1" friction="0.8 0.02 0.01" 
+            solimp="0.95 0.99 0.001" solref="0.002 1" margin="0.001"/>
     </default>
     <default class="rack">
       <geom rgba="0.3 0.3 0.3 1" friction="0.6 0.01 0.01"/>
@@ -113,27 +114,55 @@
       <site name="target_slot" pos="0.016 0 0.01" size="0.012 0.05 0.003" rgba="0 1 0 0.4" type="box"/>
     </body>
     
-    <!-- PLATE STAND AND PLATE -->
-    <!-- Move the plate stand to the opposite side of the table along the y‑axis and
-         place the plate flat on top of it. This makes the initial grasp more
-         challenging because the robot must reach across the table. -->
-    <geom name="plate_stand" type="box" size="0.04 0.02 0.03" pos="0.30 -0.25 0.03" rgba="0.5 0.5 0.5 1"/>
+    <!-- ============================================================== -->
+    <!-- PLATE STAND AND TILTED PLATE - FIXED POSITIONING -->
+    <!-- ============================================================== -->
     <!--
-      The plate now leans against the stand instead of lying flat.  We rotate the
-      plate body about its local x‑axis by 45° (0.7854 rad) so that it rests on
-      the stand.  This orientation makes one edge of the plate contact the
-      stand, giving the gripper room to grasp the rim.
+      Geometry:
+      - Stand: small box, top surface at z = 0.06 (size 0.03 height, pos z=0.03)
+      - Plate: radius=0.085, tilted 45° about X-axis
+      
+      When plate is tilted 45°:
+      - The bottom edge of plate touches the table
+      - The plate leans against the stand
+      - The top edge is exposed for grasping
+      
+      To avoid interpenetration:
+      - Plate center needs to be positioned so bottom edge just touches table
+      - With 45° tilt and radius 0.085: 
+        - Bottom edge is at: center_z - radius * sin(45°) = center_z - 0.060
+        - For bottom edge at z=0.01 (slightly above table): center_z = 0.07
+      - In Y: plate leans toward +Y against stand
+        - Stand at y=-0.25, plate center offset toward -Y
     -->
-    <body name="plate" pos="0.30 -0.25 0.06" euler="0.785398 0 0">
+    
+    <!-- Small stand for plate to lean against -->
+    <geom name="plate_stand" type="box" size="0.025 0.015 0.03" pos="0.30 -0.22 0.03" rgba="0.5 0.5 0.5 1"/>
+    
+    <!-- 
+      Plate tilted 45° about X-axis (euler="0.785 0 0")
+      Position calculated to:
+      1. Have bottom edge slightly above table (z ~ 0.01)
+      2. Lean against stand without interpenetrating
+      3. Leave top edge exposed for gripper access
+    -->
+    <body name="plate" pos="0.30 -0.27 0.075" euler="0.785398 0 0">
       <freejoint name="plate_joint"/>
       <geom name="plate_base" class="plate" type="cylinder" size="0.085 0.010" mass="0.22"/>
       <geom name="plate_rim" type="cylinder" size="0.085 0.004" pos="0 0 0.010" rgba="0.88 0.88 0.92 1" mass="0.04"/>
+      
+      <!-- Center site for tracking -->
       <site name="plate_center" pos="0 0 0.007" size="0.006" rgba="1 0 0 0.8"/>
-      <site name="plate_edge1" pos="0.075 0 0.007" size="0.005" rgba="0 0 1 0.5"/>
-      <site name="plate_edge2" pos="-0.075 0 0.007" size="0.005" rgba="0 0 1 0.5"/>
+      
+      <!-- Grasp sites on rim edges (in plate's local frame) -->
+      <!-- When tilted, +Y local points up-and-forward, -Y points down-and-back -->
+      <site name="plate_top_edge" pos="0 0.08 0.007" size="0.005" rgba="0 1 0 0.8"/>
+      <site name="plate_bottom_edge" pos="0 -0.08 0.007" size="0.005" rgba="0 0 1 0.8"/>
+      <site name="plate_left_edge" pos="-0.08 0 0.007" size="0.005" rgba="1 1 0 0.8"/>
+      <site name="plate_right_edge" pos="0.08 0 0.007" size="0.005" rgba="1 0 1 0.8"/>
     </body>
     
-    <!-- xArm7 ROBOT WITH HIGH-FIDELITY MESHES -->
+    <!-- xArm7 ROBOT -->
     <body name="link_base" pos="0 0 0" childclass="xarm7">
       <geom name="base_visual" type="mesh" mesh="link_base" material="white" contype="0" conaffinity="0"/>
       <geom name="base_collision" type="cylinder" size="0.065 0.05" pos="0 0 0.05" rgba="1 1 1 0" group="3"/>
@@ -181,12 +210,10 @@
                     <geom name="link7_collision" type="cylinder" size="0.032 0.012" pos="0 0 -0.012" rgba="1 1 1 0" group="3"/>
                     <site name="ee_site" pos="0 0 0" size="0.008" rgba="1 0 0 0.5"/>
                     
-                    <!-- GRIPPER WITH MESHES -->
-                    <!-- The gripper attaches to link7's end. Positioning may need adjustment -->
+                    <!-- GRIPPER -->
                     <body name="xarm_gripper_base_link" pos="0 0 0">
                       <geom name="gripper_base_visual" type="mesh" mesh="gripper_base" material="dark_gray" contype="0" conaffinity="0"/>
                       
-                      <!-- Drive joint for gripper open/close -->
                       <joint name="drive_joint" type="hinge" axis="1 0 0" pos="0 0.035 0.059" range="0 0.85" damping="0.5"/>
                       
                       <!-- Left side -->
@@ -228,7 +255,7 @@
                         <geom name="right_inner_knuckle_collision" type="box" size="0.006 0.006 0.015" pos="0 -0.01 0.015" rgba="1 1 1 0" group="3"/>
                       </body>
                       
-                      <!-- TCP (Tool Center Point) -->
+                      <!-- TCP -->
                       <body name="link_tcp" pos="0 0 0.172">
                         <site name="tcp_site" pos="0 0 0" size="0.006" rgba="0 1 0 1"/>
                       </body>
@@ -269,9 +296,15 @@
     <framepos name="tcp_pos" objtype="site" objname="tcp_site"/>
     <framequat name="tcp_quat" objtype="site" objname="tcp_site"/>
     <framepos name="ee_pos" objtype="site" objname="ee_site"/>
+    <!-- Add sites for grasp planning -->
+    <framepos name="plate_top" objtype="site" objname="plate_top_edge"/>
   </sensor>
   
   <keyframe>
-    <key name="home" qpos="0 0 0 1.57 0 1.57 0  0 0 0 0 0 0  0.40 -0.10 0.010 1 0 0 0"/>
+    <!-- 
+      Home pose with arm ready
+      Plate positioned: tilted 45°, leaning against stand
+    -->
+    <key name="home" qpos="0 0.35 0 1.4 0 1.05 0   0.85 0 0 0 0 0   0.30 -0.27 0.075 0.9239 0.3827 0 0"/>
   </keyframe>
 </mujoco>

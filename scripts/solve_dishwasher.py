@@ -28,7 +28,7 @@ ik = DiffIKController(
     site_name = "tcp_site", 
     dof_indices = arm_qpos_idx, 
     damping = 1e-4, 
-    step_size = 0.1
+    step_size = 0.05
 )
 
 plate_sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "plate_center")
@@ -72,6 +72,7 @@ def go_to_keypoint(kp, iters=300, dt=0.01, pos_tol=1e-3):
     target_pos = kp["pos"]
     target_quat = kp["quat"]
     grip_cmd = kp["gripper"]
+    max_step = ik.step_size
 
     for i in range(iters):
         # Current TCP position
@@ -87,7 +88,6 @@ def go_to_keypoint(kp, iters=300, dt=0.01, pos_tol=1e-3):
         d_q = ik.get_action(target_pos, target_quat)  # shape (7,)
 
         # Clamp the update magnitude for smooth motion
-        max_step = 0.05  # radians per step (tune this)
         norm = np.linalg.norm(d_q)
         if norm > max_step and norm > 0:
             d_q *= max_step / norm
@@ -101,10 +101,10 @@ def go_to_keypoint(kp, iters=300, dt=0.01, pos_tol=1e-3):
         data.qvel[arm_qpos_idx] = 0.0
 
         # Build action: only gripper is used
-        action = np.zeros(env.action_space.shape, dtype=np.float32)
-        action[-1] = grip_cmd
+        # action = np.zeros(env.action_space.shape, dtype=np.float32)
+        # action[-1] = grip_cmd
 
-        env.step(action)
+        # env.step(action)
         time.sleep(dt)
 
     # Final error report
