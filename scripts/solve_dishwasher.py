@@ -1,110 +1,135 @@
+"""
+solve_dishwasher.py - Grasp Reliability Validation
+
+Methodology: Independent Bernoulli Trials.
+1. Reset Environment (Clean State)
+2. Approach -> Descend -> Grasp -> Lift
+3. Validate Success (Is plate height > threshold?)
+4. Repeat
+"""
+
 import time
 import numpy as np
 import gymnasium as gym
 import mujoco
-import policy100.envs
-# import controller
+
+# 1. Trigger environment registration
+import policy100.envs 
+
 from controller import DiffIKController, IKConfig, make_quaternion
 
-def main():
-    # setup environment
-    env = gym.make("XArmDishwasher-v0", render_mode="human")
+def run_trial(env, trial_idx: int) -> bool:
+    """
+    Executes a single grasp attempt from a fresh reset.
+    Returns: True if grasp was successful (plate lifted).
+    """
+    # A. Hard Reset: Ensure independence between trials
     obs, info = env.reset()
     
+    # B. Re-initialize Data/Model pointers after reset
     model = env.unwrapped.model
     data = env.unwrapped.data
     
-    # setup Controller with precision config
+    # C. Setup Controller (High precision for grasping)
     ik_config = IKConfig(
         damping=1e-3,
         max_delta_q=0.05, 
-        pos_gain=1.0,
+        pos_gain=1.0, 
         ori_gain=1.0,
-        tolerance_pos=0.002,  # 2mm tolerance for grasping
+        tolerance_pos=0.002, 
         tolerance_ori=0.05
     )
     
-    ik = DiffIKController(
-        model, data, 
-        site_name="tcp_site", 
-        config=ik_config
-    )
+    ik = DiffIKController(model, data, site_name="tcp_site", config=ik_config)
 
-    # targets
+    # D. Perception: Find the plate *in this specific episode*
     plate_sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "plate_center")
     plate_pos = data.site_xpos[plate_sid].copy()
     
-    # orientation -> gripper pointing DOWN (pitch=180 deg)
+    # Define Target Orientation (Gripper Down)
     quat_down = make_quaternion(roll=0, pitch=np.pi, yaw=0)
 
-    # Structure: (Position, Gripper_Value, Label)
-    # Gripper: 0.85 = Open, 0.0 = Closed
+    # E. Define Trajectory: Hover -> Grasp -> Lift (Validation)
     trajectory = [
         {
-            "name": "HOVER_APPROACH",
-            "pos": plate_pos + np.array([0.0, 0.0, 0.20]), # 20cm above
-            "quat": quat_down,
-            "gripper": 0.85 
+            "name": "HOVER",
+            "pos": plate_pos + np.array([0.0, 0.0, 0.20]), 
+            "quat": quat_down, "gripper": 0.85 
         },
         {
-            "name": "DESCEND_TO_GRASP",
-            "pos": plate_pos + np.array([0.0, 0.0, 0.025]), # 2.5cm offset for fingers
-            "quat": quat_down,
-            "gripper": 0.85
+            "name": "DESCEND",
+            "pos": plate_pos + np.array([0.0, 0.0, 0.025]), 
+            "quat": quat_down, "gripper": 0.85 
         },
         {
-            "name": "CLOSE_GRIPPER",
+            "name": "CLOSE",
             "pos": plate_pos + np.array([0.0, 0.0, 0.025]),
-            "quat": quat_down,
-            "gripper": 0.0 
+            "quat": quat_down, "gripper": 0.0  # Close
+        },
+        {
+            "name": "LIFT_VALIDATION",
+            "pos": plate_pos + np.array([0.0, 0.0, 0.20]), 
+            "quat": quat_down, "gripper": 0.0  # Keep Closed
         }
     ]
 
-    print("\n--- Starting Minimal Grasp Test ---")
+    print(f"\n--- Trial {trial_idx + 1} ---")
     
-    # 5. Execution Loop
     for point in trajectory:
         target_pos = point["pos"]
         target_quat = point["quat"]
-        target_gripper = point["gripper"]
         
-        print(f"Moving to: {point['name']}...")
-        
-        # IK Convergence Loop
-        for i in range(500):
-            # A. Compute IK
-            new_q, pos_err, ori_err = ik.step_toward(target_pos, target_quat)
+        # IK Execution Loop
+        for _ in range(500):
+            # 1. Compute
+            new_q, pos_err, _ = ik.step_toward(target_pos, target_quat)
             
-            # B. Apply to Simulation (Kinematic Override)
-            # We write directly to qpos to isolate geometric errors from control errors
+            # 2. Act (Kinematic Override)
             data.qpos[ik.qpos_indices] = new_q
-            data.qvel[ik.dof_indices] = 0.0 # Stop movement
+            data.qvel[ik.dof_indices] = 0.0
+            if len(data.ctrl) > 0: data.ctrl[-1] = point["gripper"]
             
-            # Apply Gripper Action (last actuator)
-            # Find gripper actuator index (usually last)
-            data.ctrl[-1] = target_gripper
-            
-            # C. Step Physics to update sites/sensors
+            # 3. Step Physics
             mujoco.mj_forward(model, data)
-            
-            # D. Render
             env.render()
-            time.sleep(0.005)
+            time.sleep(0.002)
             
-            # E. Check Convergence
+            # 4. Convergence
             if ik.is_converged(target_pos, target_quat):
-                print(f" -> Reached {point['name']} (Err: {pos_err:.4f}m)")
                 break
         
-        # optional 
-        if point["name"] == "DESCEND_TO_GRASP":
-            print("   [Paused] Check alignment in viewer. Press Enter to grasp...")
-            # input() # Uncomment to manually step through
-            time.sleep(1.0) # Short pause for visual check
+        # Brief pause to verify visual state
+        if point["name"] == "CLOSE":
+            time.sleep(0.2)
 
-    print("--- Grasp Sequence Complete ---")
+    # F. Validation: Did the plate actually move up?
+    # We check the current Z height of the plate site
+    current_plate_z = data.site_xpos[plate_sid][2]
+    # Initial plate Z is usually ~0.0 (on table) or ~0.02 (thickness)
+    # If we lifted to +0.20, it should be well above 0.10
+    success = current_plate_z > 0.10
     
-    # hold the final pose
+    if success:
+        print(f"Result: [PASS] Plate Z = {current_plate_z:.3f}m")
+    else:
+        print(f"Result: [FAIL] Plate Z = {current_plate_z:.3f}m (Grasp Slipped)")
+        
+    return success
+
+def main():
+    env = gym.make("XArmDishwasher-v0", render_mode="human")
+    
+    n_trials = 3
+    successes = 0
+    
+    for i in range(n_trials):
+        if run_trial(env, i):
+            successes += 1
+        time.sleep(1.0) # Pause between trials
+            
+    print(f"\nReliability Score: {successes}/{n_trials} ({successes/n_trials*100:.1f}%)")
+    
+    # Hold final state
     while True:
         env.render()
         time.sleep(0.1)

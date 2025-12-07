@@ -147,7 +147,7 @@ class DiffIKController:
         I_damp = np.eye(JJT.shape[0]) * lambda_sq
 
         # Solve linear system for the "Cartesian" force/velocity
-        # (J @ J.T + lam*I) * x = error
+        # (J @ J.T + lam*I) * x = error 
         velocity_cartesian = np.linalg.solve(JJT + I_damp, error)
         
         # Map back to joint space
