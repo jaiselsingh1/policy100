@@ -6,6 +6,48 @@ import policy100.envs
 
 from controller import DiffIKController, IKConfig
 
+
+
+import time
+import numpy as np
+import gymnasium as gym
+import mujoco
+
+from controller import DiffIKController, IKConfig
+
+
+def step_ik(env, ik, target_pos, steps):
+    model = env.unwrapped.model
+    data = env.unwrapped.data
+
+    for _ in range(steps):
+        dq = ik.compute(target_pos, target_quat=None, use_nullspace=False)
+        q = ik.get_current_joints()
+        new_q = q + dq
+        new_q = np.clip(new_q, ik.joint_limits[:, 0], ik.joint_limits[:, 1])
+
+        data.qpos[ik.qpos_indices] = new_q
+        mujoco.mj_forward(model, data)
+        mujoco.mj_step(model, data)
+        env.render()
+
+
+def set_gripper_qpos(env, value, steps):
+    model = env.unwrapped.model
+    data = env.unwrapped.data
+
+    if hasattr(env.unwrapped, "_gripper_qpos_idx"):
+        idx = env.unwrapped._gripper_qpos_idx
+    else:
+        raise RuntimeError("env.unwrapped._gripper_qpos_idx not defined; set it in the env")
+
+    for _ in range(steps):
+        data.qpos[idx] = value
+        mujoco.mj_forward(model, data)
+        mujoco.mj_step(model, data)
+        env.render()
+
+
 def main():
     env = gym.make("XArmDishwasher-v0", render_mode="human")
     obs, info = env.reset()
@@ -34,20 +76,25 @@ def main():
 
     mujoco.mj_forward(model, data)
     plate_pos = data.site_xpos[plate_sid].copy()
-    target_pos = plate_pos + np.array([0.0, 0.0, 0.10])
+
+    hover_pos = plate_pos + np.array([0.0, 0.0, 0.15])
+    grasp_pos = plate_pos + np.array([0.0, 0.0, 0.025])
+    lift_pos = hover_pos
 
     for _ in range(10):
         env.render()
 
-    for t in range(400):
-        dq = ik.compute(target_pos, target_quat=None, use_nullspace=False)
-        q = ik.get_current_joints()
-        new_q = q + dq
-        new_q = np.clip(new_q, ik.joint_limits[:, 0], ik.joint_limits[:, 1])
+    # approach hover above plate
+    step_ik(env, ik, hover_pos, steps=300)
 
-        data.qpos[ik.qpos_indices] = new_q
-        mujoco.mj_forward(model, data)
-        env.render()
+    # move down to grasp pose
+    step_ik(env, ik, grasp_pos, steps=200)
+
+    # close gripper
+    set_gripper_qpos(env, value=1.0, steps=150)
+
+    # lift plate
+    step_ik(env, ik, lift_pos, steps=300)
 
     time.sleep(1.0)
     env.close()
@@ -55,42 +102,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-# GRIPPER_OPEN = -1.0
-
-# def send_pd_action(env, target_q, gripper):
-#     m = env.unwrapped.model
-#     d = env.unwrapped.data
-
-#     arm_q_idx = env.unwrapped._arm_qpos_idx
-#     if hasattr(env.unwrapped, "_arm_ctrl_idx"):
-#         arm_ctrl_idx = env.unwrapped._arm_ctrl_idx
-#     else:
-#         arm_ctrl_idx = np.arange(7, dtype=int)
-
-#     q = d.qpos[arm_q_idx]
-#     qdot = d.qvel[arm_q_idx]
-
-#     Kp = 10.0
-#     Kd = 1.0
-#     u = Kp * (target_q - q) - Kd * qdot
-
-#     action = np.zeros(env.action_space.shape[0], dtype=np.float32)
-#     low = env.action_space.low[arm_ctrl_idx]
-#     high = env.action_space.high[arm_ctrl_idx]
-#     u = np.clip(u, low, high)
-
-#     action[arm_ctrl_idx] = u
-#     action[-1] = gripper
-
-#     return env.step(action)
 
 
 # def main():
@@ -108,7 +119,8 @@ if __name__ == "__main__":
 #             damping=1e-3,
 #             max_delta_q=0.05,
 #             pos_gain=1.0,
-#             ori_gain=0.0,   # orientation off for step 1
+#             ori_gain=0.0,
+#             nullspace_gain=0.0,
 #             tolerance_pos=0.003,
 #             tolerance_ori=0.1,
 #         ),
@@ -118,24 +130,22 @@ if __name__ == "__main__":
 #     if plate_sid == -1:
 #         raise RuntimeError("site 'plate_center' not found")
 
+#     mujoco.mj_forward(model, data)
 #     plate_pos = data.site_xpos[plate_sid].copy()
-#     target_pos = plate_pos + np.array([0.0, 0.0, 0.20])  # hover above plate
+#     target_pos = plate_pos + np.array([0.0, 0.0, 0.10])
 
 #     for _ in range(10):
 #         env.render()
 
 #     for t in range(400):
-#         dq = ik.compute(target_pos, target_quat=None)
-#         current_q = ik.get_current_joints()
-#         target_q = current_q + dq
+#         dq = ik.compute(target_pos, target_quat=None, use_nullspace=False)
+#         q = ik.get_current_joints()
+#         new_q = q + dq
+#         new_q = np.clip(new_q, ik.joint_limits[:, 0], ik.joint_limits[:, 1])
 
-#         obs, reward, terminated, truncated, info = send_pd_action(
-#             env, target_q, GRIPPER_OPEN
-#         )
+#         data.qpos[ik.qpos_indices] = new_q
+#         mujoco.mj_forward(model, data)
 #         env.render()
-
-#         if terminated or truncated:
-#             break
 
 #     time.sleep(1.0)
 #     env.close()
@@ -143,3 +153,4 @@ if __name__ == "__main__":
 
 # if __name__ == "__main__":
 #     main()
+
