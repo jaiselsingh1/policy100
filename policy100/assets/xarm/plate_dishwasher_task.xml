@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Robot: xArm7 with gripper
-  
-  CHANGES:
-  1. Plate tilted at 45° leaning against a small stand (GRASPABLE)
-  2. Positioned to avoid interpenetration
-  3. Stand is small so gripper can access plate rim
-  
-  The tilted plate exposes the rim for the gripper to grasp from the side.
+
+  1. Plate is HORIZONTAL (no tilt) - easier grasp geometry
+  2. Plate sits on an elevated stand - gripper can access rim
+  3. Positioned at Y=0 - centered in front of robot for better reachability
   
   COORDINATE SYSTEM:
     - Origin (0,0,0) = Robot base center, ON the table surface
@@ -85,7 +82,7 @@
   </default>
   
   <worldbody>
-      <!-- xArm7 ROBOT -->
+    <!-- xArm7 ROBOT -->
     <include file="xarm7.xml"/>
     
     <geom name="floor" type="plane" size="2 2 0.1" pos="0 0 -0.75" material="matplane"/>
@@ -118,51 +115,57 @@
     </body>
     
     <!-- ============================================================== -->
-    <!-- PLATE STAND AND TILTED PLATE - FIXED POSITIONING -->
+    <!-- PLATE STAND - Elevates plate so gripper can access rim         -->
     <!-- ============================================================== -->
     <!--
-      Geometry:
-      - Stand: small box, top surface at z = 0.06 (size 0.03 height, pos z=0.03)
-      - Plate: radius=0.085, tilted 45° about X-axis
+      Stand design:
+      - Small pedestal that only supports center of plate
+      - Height = 0.04m (40mm) - enough clearance for gripper fingers
+      - Plate sits on top, horizontal (euler="0 0 0")
       
-      When plate is tilted 45°:
-      - The bottom edge of plate touches the table
-      - The plate leans against the stand
-      - The top edge is exposed for grasping
+      Plate geometry:
+      - Radius = 0.085m
+      - Thickness = 0.010m (base) + 0.004m (rim) = 0.014m total
       
-      To avoid interpenetration:
-      - Plate center needs to be positioned so bottom edge just touches table
-      - With 45° tilt and radius 0.085: 
-        - Bottom edge is at: center_z - radius * sin(45°) = center_z - 0.060
-        - For bottom edge at z=0.01 (slightly above table): center_z = 0.07
-      - In Y: plate leans toward +Y against stand
-        - Stand at y=-0.25, plate center offset toward -Y
+      Positioning:
+      - Stand top surface at z = 0.04
+      - Plate center at z = 0.04 + 0.007 (half thickness) = 0.047
+      - Located at x=0.35, y=0 (centered in front of robot)
     -->
     
-    <!-- Small stand for plate to lean against -->
-    <geom name="plate_stand" type="box" size="0.025 0.015 0.03" pos="0.30 -0.22 0.03" rgba="0.5 0.5 0.5 1"/>
+    <!-- Pedestal stand - small so gripper can reach plate rim -->
+    <body name="plate_stand" pos="0.40 0.0 0.0">
+      <!-- Central pillar -->
+      <geom name="stand_pillar" type="cylinder" size="0.025 0.02" pos="0 0 0.02" rgba="0.4 0.4 0.4 1"/>
+      <!-- Flat top surface -->
+      <geom name="stand_top" type="cylinder" size="0.03 0.003" pos="0 0 0.043" rgba="0.5 0.5 0.5 1"/>
+    </body>
     
     <!-- 
-      Plate tilted 45° about X-axis (euler="0.785 0 0")
-      Position calculated to:
-      1. Have bottom edge slightly above table (z ~ 0.01)
-      2. Lean against stand without interpenetrating
-      3. Leave top edge exposed for gripper access
+      PLATE - Horizontal on stand
+      - euler="0 0 0" means no rotation (flat)
+      - Gripper approaches from above, fingers grab rim edge
     -->
-    <body name="plate" pos="0.30 -0.27 0.075" euler="0.785398 0 0">
+    <body name="plate" pos="0.40 0.0 0.057" euler="0 0 0">
       <freejoint name="plate_joint"/>
+      
+      <!-- Main plate body -->
       <geom name="plate_base" class="plate" type="cylinder" size="0.085 0.010" mass="0.22"/>
+      <!-- Raised rim -->
       <geom name="plate_rim" type="cylinder" size="0.085 0.004" pos="0 0 0.010" rgba="0.88 0.88 0.92 1" mass="0.04"/>
       
       <!-- Center site for tracking -->
-      <site name="plate_center" pos="0 0 0.007" size="0.006" rgba="1 0 0 0.8"/>
+      <site name="plate_center" pos="0 0 0.012" size="0.006" rgba="1 0 0 0.8"/>
       
-      <!-- Grasp sites on rim edges (in plate's local frame) -->
-      <!-- When tilted, +Y local points up-and-forward, -Y points down-and-back -->
-      <site name="plate_top_edge" pos="0 0.08 0.007" size="0.005" rgba="0 1 0 0.8"/>
-      <site name="plate_bottom_edge" pos="0 -0.08 0.007" size="0.005" rgba="0 0 1 0.8"/>
-      <site name="plate_left_edge" pos="-0.08 0 0.007" size="0.005" rgba="1 1 0 0.8"/>
-      <site name="plate_right_edge" pos="0.08 0 0.007" size="0.005" rgba="1 0 1 0.8"/>
+      <!-- 
+        Edge sites for grasp planning
+        These are at the rim edge, 0.08m from center (slightly inside 0.085 radius)
+        Z = 0.012 puts them at top surface of rim
+      -->
+      <site name="plate_top_edge" pos="0 0.08 0.012" size="0.005" rgba="0 1 0 0.8"/>
+      <site name="plate_bottom_edge" pos="0 -0.08 0.012" size="0.005" rgba="0 0 1 0.8"/>
+      <site name="plate_left_edge" pos="-0.08 0 0.012" size="0.005" rgba="1 1 0 0.8"/>
+      <site name="plate_right_edge" pos="0.08 0 0.012" size="0.005" rgba="1 0 1 0.8"/>
     </body>
     
   </worldbody>
@@ -193,15 +196,14 @@
     <framepos name="tcp_pos" objtype="site" objname="tcp_site"/>
     <framequat name="tcp_quat" objtype="site" objname="tcp_site"/>
     <framepos name="ee_pos" objtype="site" objname="ee_site"/>
-    <!-- Add sites for grasp planning -->
     <framepos name="plate_top" objtype="site" objname="plate_top_edge"/>
   </sensor>
   
   <keyframe>
     <!-- 
-      Home pose with arm ready
-      Plate positioned: tilted 45°, leaning against stand
+      Home pose: arm ready, plate horizontal on stand
+      Plate quat "1 0 0 0" = identity = no rotation
     -->
-    <key name="home" qpos="0 0.35 0 1.4 0 1.05 0   0.85 0 0 0 0 0   0.30 -0.27 0.075 0.9239 0.3827 0 0"/>
+    <key name="home" qpos="0 0.35 0 1.4 0 1.05 0   0.85 0 0 0 0 0   0.40 0.0 0.057 1 0 0 0"/>
   </keyframe>
 </mujoco>
