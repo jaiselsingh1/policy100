@@ -233,6 +233,34 @@ class DiffIKController:
                 return False
                 
         return True
+    
+    def get_joint_solution(
+        self, 
+        target_pos: np.ndarray, 
+        target_quat: Optional[np.ndarray] = None,
+        max_iters: int = 200,
+        seed_q: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
+
+        original_q = self.get_current_joints().copy()
+        q = seed_q.copy() if seed_q is not None else original_q.copy()
+        success = False
+
+        for _ in range(max_iters):
+            self.data.qpos[self.qpos_indices] = q
+            mujoco.mj_forward(self.model, self.data)
+
+            if self.is_converged(target_pos, target_quat):
+                success = True
+                break
+
+            dq = self.compute(target_pos, target_quat)
+            q += dq
+            q = np.clip(q, self.joint_limits[:, 0], self.joint_limits[:, 1])
+
+        self.data.qpos[self.qpos_indices] = original_q
+        mujoco.mj_forward(self.model, self.data)
+
+        return q if success else None
 
 def make_quaternion(roll: float, pitch: float, yaw: float) -> np.ndarray:
     """
