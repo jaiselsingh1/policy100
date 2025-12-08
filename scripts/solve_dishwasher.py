@@ -6,16 +6,6 @@ import policy100.envs
 
 from controller import DiffIKController, IKConfig
 
-
-
-import time
-import numpy as np
-import gymnasium as gym
-import mujoco
-
-from controller import DiffIKController, IKConfig
-
-
 def step_ik(env, ik, target_pos, steps):
     model = env.unwrapped.model
     data = env.unwrapped.data
@@ -26,7 +16,9 @@ def step_ik(env, ik, target_pos, steps):
         new_q = q + dq
         new_q = np.clip(new_q, ik.joint_limits[:, 0], ik.joint_limits[:, 1])
 
-        data.qpos[ik.qpos_indices] = new_q
+        # data.qpos[ik.qpos_indices] = new_q
+        data.ctrl[7] = 0.0
+        data.ctrl[:7] = new_q
         mujoco.mj_forward(model, data)
         mujoco.mj_step(model, data)
         env.render()

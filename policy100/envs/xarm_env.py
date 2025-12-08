@@ -127,6 +127,7 @@ class XArmEnv(MujocoEnv):
     
     def reset_model(self):
         # reset physics to initial XML state
+        self.init_qpos[1] = -0.5
         self.set_state(self.init_qpos, self.init_qvel)
 
         # reset Task logic (randomization, spawning, etc.)
