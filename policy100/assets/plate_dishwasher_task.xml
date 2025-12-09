@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  xArm7 Plate Dishwasher Task
+  Uses MuJoCo Menagerie xarm7 model for proper gripper behavior.
+-->
+<mujoco model="xarm7_plate_dishwasher_task">
+  <!-- meshdir points to Menagerie assets (sibling folder) -->
+  <compiler angle="radian" autolimits="true" meshdir="xarm7_menagerie/assets"/>
+  
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" cone="elliptic">
+    <flag contact="enable"/>
+  </option>
+  
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+    <quality shadowsize="4096"/>
+    <map force="0.1" zfar="30"/>
+  </visual>
+  
+  <asset>
+    <texture name="texplane" type="2d" builtin="checker" rgb1="0.15 0.15 0.15" rgb2="0.25 0.25 0.25" width="512" height="512"/>
+    <material name="matplane" texture="texplane" texrepeat="6 6" reflectance="0.1"/>
+    <texture name="wood" type="2d" builtin="flat" rgb1="0.55 0.45 0.35" rgb2="0.5 0.4 0.3" width="256" height="256"/>
+    <material name="wood" texture="wood" reflectance="0.05"/>
+    
+    <!-- Task-specific materials -->
+    <material name="plate_mat" rgba="0.92 0.92 0.96 1"/>
+    <material name="rack_mat" rgba="0.3 0.3 0.3 1"/>
+    <material name="stand_mat" rgba="0.5 0.5 0.5 1"/>
+  </asset>
+
+  <!-- 
+    Include the Menagerie xarm7 model.
+    xarm7_menagerie/ is a sibling folder to this XML file.
+  -->
+  <include file="xarm7_menagerie/xarm7.xml"/>
+  
+  <default>
+    <default class="plate">
+      <geom rgba="0.92 0.92 0.96 1" friction="0.8 0.02 0.01" 
+            solimp="0.95 0.99 0.001" solref="0.002 1" margin="0.001"/>
+    </default>
+    <default class="rack">
+      <geom rgba="0.3 0.3 0.3 1" friction="0.6 0.01 0.01"/>
+    </default>
+    <default class="table">
+      <geom rgba="0.55 0.45 0.35 1"/>
+    </default>
+  </default>
+  
+  <worldbody>
+    <!-- Floor and lighting -->
+    <geom name="floor" type="plane" size="2 2 0.1" pos="0 0 -0.63" material="matplane"/>
+    <light pos="0.3 0 1.5" dir="0 0 -1" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
+    <light pos="-0.3 0.4 1.0" dir="0.2 -0.2 -0.9" diffuse="0.4 0.4 0.4"/>
+    <light pos="0.5 -0.3 1.2" dir="-0.1 0.1 -0.9" diffuse="0.3 0.3 0.3"/>
+    
+    <!-- TABLE (adjusted Z for robot base at 0.12) -->
+    <body name="table" pos="0.2 0 -0.12">
+      <geom name="table_top" type="box" class="table" size="0.50 0.45 0.02" pos="0 0 -0.02" material="wood"/>
+      <geom name="leg1" type="box" class="table" size="0.03 0.03 0.255" pos="-0.44 -0.39 -0.295"/>
+      <geom name="leg2" type="box" class="table" size="0.03 0.03 0.255" pos="0.44 -0.39 -0.295"/>
+      <geom name="leg3" type="box" class="table" size="0.03 0.03 0.255" pos="-0.44 0.39 -0.295"/>
+      <geom name="leg4" type="box" class="table" size="0.03 0.03 0.255" pos="0.44 0.39 -0.295"/>
+    </body>
+    
+    <!-- DISHWASHER RACK -->
+    <body name="dishwasher_rack" pos="0.50 0.22 -0.116">
+      <geom name="rack_base" class="rack" type="box" size="0.10 0.08 0.004"/>
+      <geom name="slot0" class="rack" type="box" size="0.002 0.065 0.05" pos="-0.065 0 0.054"/>
+      <geom name="slot1" class="rack" type="box" size="0.002 0.065 0.05" pos="-0.0325 0 0.054"/>
+      <geom name="slot2" class="rack" type="box" size="0.002 0.065 0.05" pos="0 0 0.054"/>
+      <geom name="slot3" class="rack" type="box" size="0.002 0.065 0.05" pos="0.0325 0 0.054"/>
+      <geom name="slot4" class="rack" type="box" size="0.002 0.065 0.05" pos="0.065 0 0.054"/>
+      <geom name="wall_l" class="rack" type="box" size="0.003 0.08 0.055" pos="-0.097 0 0.059"/>
+      <geom name="wall_r" class="rack" type="box" size="0.003 0.08 0.055" pos="0.097 0 0.059"/>
+      <geom name="wall_f" class="rack" type="box" size="0.10 0.003 0.055" pos="0 -0.077 0.059"/>
+      <geom name="wall_b" class="rack" type="box" size="0.10 0.003 0.055" pos="0 0.077 0.059"/>
+      <site name="target_slot" pos="0.016 0 0.01" size="0.012 0.05 0.003" rgba="0 1 0 0.4" type="box"/>
+    </body>
+    
+    <!-- PLATE STAND -->
+    <body name="plate_stand" pos="0.40 0.0 -0.12">
+      <geom name="stand_pillar" type="cylinder" size="0.025 0.02" pos="0 0 0.02" material="stand_mat"/>
+      <geom name="stand_top" type="cylinder" size="0.03 0.003" pos="0 0 0.043" material="stand_mat"/>
+    </body>
+    
+    <!-- PLATE -->
+    <body name="plate" pos="0.40 0.0 -0.063" euler="0 0 0">
+      <freejoint name="plate_joint"/>
+      <geom name="plate_base" class="plate" type="cylinder" size="0.085 0.010" mass="0.22"/>
+      <geom name="plate_rim" type="cylinder" size="0.085 0.004" pos="0 0 0.010" rgba="0.88 0.88 0.92 1" mass="0.04"/>
+      <site name="plate_center" pos="0 0 0.012" size="0.006" rgba="1 0 0 0.8"/>
+      <site name="plate_top_edge" pos="0 0.08 0.012" size="0.005" rgba="0 1 0 0.8"/>
+      <site name="plate_bottom_edge" pos="0 -0.08 0.012" size="0.005" rgba="0 0 1 0.8"/>
+      <site name="plate_left_edge" pos="-0.08 0 0.012" size="0.005" rgba="1 1 0 0.8"/>
+      <site name="plate_right_edge" pos="0.08 0 0.012" size="0.005" rgba="1 0 1 0.8"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <framepos name="plate_pos" objtype="site" objname="plate_center"/>
+    <framequat name="plate_quat" objtype="site" objname="plate_center"/>
+    <framepos name="target_pos" objtype="site" objname="target_slot"/>
+    <framepos name="tcp_pos" objtype="site" objname="link_tcp"/>
+    <framequat name="tcp_quat" objtype="site" objname="link_tcp"/>
+  </sensor>
+
+  <keyframe>
+    <key name="task_start" qpos="0 -0.247 0 0.909 0 1.15644 0 0 0 0 0 0 0   0.40 0.0 -0.063 1 0 0 0" 
+         ctrl="0 -0.247 0 0.909 0 1.15644 0 0"/>
+  </keyframe>
+</mujoco>

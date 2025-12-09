@@ -1,5 +1,5 @@
 <mujoco model="xarm7">
-  <compiler angle="radian" autolimits="true" meshdir="assets"/>
+  <compiler angle="radian" autolimits="true" meshdir="./menagerie_assets"/>
 
   <option integrator="implicitfast"/>
 
