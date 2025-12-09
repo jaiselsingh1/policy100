@@ -34,7 +34,7 @@
     Include the Menagerie xarm7 model.
     xarm7_menagerie/ is a sibling folder to this XML file.
   -->
-  <include file="xarm7_menagerie/xarm7.xml"/>
+  <include file="xarm7.xml"/>
   
   <default>
     <default class="plate">
