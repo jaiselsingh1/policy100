@@ -4,8 +4,7 @@
   Uses MuJoCo Menagerie xarm7 model for proper gripper behavior.
 -->
 <mujoco model="xarm7_plate_dishwasher_task">
-  <!-- meshdir points to Menagerie assets (sibling folder) -->
-  <compiler angle="radian" autolimits="true" meshdir="xarm7_menagerie/assets"/>
+  <compiler angle="radian" autolimits="true" meshdir="xarm7_menagerie/assets/"/>
   
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" cone="elliptic">
     <flag contact="enable"/>
