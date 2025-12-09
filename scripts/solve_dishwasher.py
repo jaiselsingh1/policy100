@@ -58,14 +58,12 @@ def get_grasp_pose_from_plate(model, data, plate_site_name: str = "plate_center"
     
     # Plate Z-axis is the normal to the plate surface
     plate_normal = plate_mat[:, 2]
-    
-    # Gripper approaches opposite to plate normal
-    approach_dir = -plate_normal
-    
-    # Convert to quaternion
-    # For finger orientation hint: use plate's Y-axis so fingers align with plate
     plate_y = plate_mat[:, 1]
-    grasp_quat = approach_dir_to_quat(approach_dir, gripper_y_hint=plate_y)
+    
+    # Gripper approaches direction that is perpindicular to the plate
+    approach_dir = -plate_y
+    
+    grasp_quat = approach_dir_to_quat(approach_dir, gripper_y_hint=plate_normal)
     
     return plate_pos, grasp_quat, approach_dir
 
@@ -146,16 +144,16 @@ def main():
 
     # Execute
     print("\nMoving to hover...")
-    step_ik(env, ik, hover_pos, grasp_quat, steps=300)
+    step_ik(env, ik, hover_pos, grasp_quat, steps=1000)
 
     print("Descending to grasp...")
-    step_ik(env, ik, grasp_pos, grasp_quat, steps=200)
+    step_ik(env, ik, grasp_pos, grasp_quat, steps=1000)
 
     print("Closing gripper...")
-    set_gripper(env, value=1.0, steps=150)
+    set_gripper(env, value=1.0, steps=1000)
 
     print("Lifting...")
-    step_ik(env, ik, lift_pos, grasp_quat, steps=300)
+    step_ik(env, ik, lift_pos, grasp_quat, steps=1000)
 
     # Check result
     mujoco.mj_forward(model, data)
