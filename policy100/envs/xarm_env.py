@@ -63,7 +63,7 @@ class XArmEnv(MujocoEnv):
         if model_path is None:
             root_dir = Path(__file__).resolve().parent.parent
             
-            path_xarm = root_dir / "assets" / "xarm" / self.entry.xml_file
+            path_xarm = root_dir / "assets" / "xarm7_menagerie" / self.entry.xml_file
             if path_xarm.exists():
                 model_path = str(path_xarm)
             else:

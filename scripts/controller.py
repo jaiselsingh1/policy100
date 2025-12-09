@@ -19,7 +19,7 @@ class DiffIKController:
         self,
         model: mujoco.MjModel,
         data: mujoco.MjData,
-        site_name: str = "tcp_site",
+        site_name: str = "link_tcp",
         joint_names: Optional[List[str]] = None,
         config: Optional[IKConfig] = None,
     ):

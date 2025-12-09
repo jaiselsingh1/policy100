@@ -106,7 +106,7 @@ def main():
     ik = DiffIKController(
         model,
         data,
-        site_name="tcp_site",
+        site_name="link_tcp",
         config=IKConfig(
             damping=1e-3,
             max_delta_q=0.05,
