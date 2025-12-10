@@ -80,7 +80,6 @@ def step_ik(env, ik, target_pos, target_quat, steps):
         new_q = np.clip(new_q, ik.joint_limits[:, 0], ik.joint_limits[:, 1])
 
         data.ctrl[:7] = new_q
-        data.ctrl[7] = 0.0
         mujoco.mj_step(model, data)
         env.render()
 
@@ -134,7 +133,9 @@ def main():
     grasp_pos = plate_pos - approach_dir * grasp_offset
     
     # Lift: for now, just go back to hover
-    lift_pos = hover_pos
+    # lift_pos = hover_pos
+    lift_pos = np.array([0.50, -0.22, 0.2])
+    lift_quat = np.array([0.707, 0, 0.707, 0.0])
 
     print(f"\nWaypoints:")
     print(f"  Hover: {hover_pos}")
@@ -148,13 +149,13 @@ def main():
     step_ik(env, ik, hover_pos, grasp_quat, steps=1000)
 
     print("Descending to grasp...")
-    step_ik(env, ik, grasp_pos, grasp_quat, steps=1000)
+    step_ik(env, ik, grasp_pos, grasp_quat, steps=500)
 
     print("Closing gripper...")
-    set_gripper(env, value=255.0, steps=1000)
+    set_gripper(env, value=255.0, steps=50)
 
     print("Lifting...")
-    step_ik(env, ik, lift_pos, grasp_quat, steps=1000)
+    step_ik(env, ik, lift_pos, lift_quat, steps=1000)
 
     # Check result
     mujoco.mj_forward(model, data)

@@ -82,12 +82,12 @@
     
     <!-- PLATE STAND: shifted up by +0.12 -->
     <body name="plate_stand" pos="0.40 0.0 0.0">
-      <geom name="stand_pillar" type="cylinder" size="0.025 0.02" pos="0 0 0.02" material="stand_mat"/>
-      <geom name="stand_top" type="cylinder" size="0.03 0.003" pos="0 0 0.043" material="stand_mat"/>
+      <geom name="stand_pillar" type="cylinder" size="0.025 0.05" pos="0 0 0.05" material="stand_mat"/>
+      <!-- <geom name="stand_top" type="cylinder" size="0.03 0.003" pos="0 0 0.043" material="stand_mat"/> -->
     </body>
     
-    <!-- PLATE: shifted up by +0.12 to keep pose relative to stand -->
-    <body name="plate" pos="0.40 0.0 0.057" euler="0 0 0">
+    <!-- PLATE-->
+    <body name="plate" pos="0.40 0.0 0.10" euler="0 0 0">
       <freejoint name="plate_joint"/>
       <geom name="plate_base" class="plate" type="cylinder" size="0.085 0.010" mass="0.22"/>
       <geom name="plate_rim" type="cylinder" size="0.085 0.004" pos="0 0 0.010" rgba="0.88 0.88 0.92 1" mass="0.04"/>
