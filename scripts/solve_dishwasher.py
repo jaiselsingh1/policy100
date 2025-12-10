@@ -3,6 +3,7 @@ import numpy as np
 import gymnasium as gym
 import mujoco
 import policy100.envs
+import tqdm
 
 from controller import DiffIKController, IKConfig
 
@@ -61,7 +62,7 @@ def get_grasp_pose_from_plate(model, data, plate_site_name: str = "plate_center"
     plate_y = plate_mat[:, 1]
     
     # Gripper approaches direction that is perpindicular to the plate
-    approach_dir = -plate_y
+    approach_dir = plate_y
     
     grasp_quat = approach_dir_to_quat(approach_dir, gripper_y_hint=plate_normal)
     
@@ -72,7 +73,7 @@ def step_ik(env, ik, target_pos, target_quat, steps):
     model = env.unwrapped.model
     data = env.unwrapped.data
 
-    for _ in range(steps):
+    for _ in tqdm.tqdm(range(steps)):
         dq = ik.compute(target_pos, target_quat=target_quat, use_nullspace=False)
         q = ik.get_current_joints()
         new_q = q + dq
@@ -107,9 +108,9 @@ def main():
         site_name="link_tcp",
         config=IKConfig(
             damping=1e-3,
-            max_delta_q=0.05,
+            max_delta_q=0.5,
             pos_gain=1.0,
-            ori_gain=0.5,
+            ori_gain=1.0,
             nullspace_gain=0.0,
             tolerance_pos=0.003,
             tolerance_ori=0.1,
@@ -125,7 +126,7 @@ def main():
 
     # Compute waypoints along the approach direction
     # hover -- offset along the approach direction
-    hover_offset = 0.15  # 15cm back along approach
+    hover_offset = 0.20  
     hover_pos = plate_pos - approach_dir * hover_offset  # minus because approach points toward plate
     
     # Grasp: small offset from plate center
@@ -150,7 +151,7 @@ def main():
     step_ik(env, ik, grasp_pos, grasp_quat, steps=1000)
 
     print("Closing gripper...")
-    set_gripper(env, value=1.0, steps=1000)
+    set_gripper(env, value=255.0, steps=1000)
 
     print("Lifting...")
     step_ik(env, ik, lift_pos, grasp_quat, steps=1000)
