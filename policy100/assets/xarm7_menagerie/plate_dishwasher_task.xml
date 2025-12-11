@@ -89,8 +89,8 @@
     <!-- PLATE-->
     <body name="plate" pos="0.40 0.0 0.10" euler="0 0 0">
       <freejoint name="plate_joint"/>
-      <geom name="plate_base" class="plate" type="cylinder" size="0.085 0.010" mass="0.22"/>
-      <geom name="plate_rim" type="cylinder" size="0.085 0.004" pos="0 0 0.010" rgba="0.88 0.88 0.92 1" mass="0.04"/>
+      <geom name="plate_base" class="plate" type="cylinder" size="0.065 0.008" mass="0.22"/>
+      <geom name="plate_rim" type="cylinder" size="0.065 0.004" pos="0 0 0.008" rgba="0.88 0.88 0.92 1" mass="0.04"/>
       <site name="plate_center" pos="0 0 0.012" size="0.006" rgba="1 0 0 0.8"/>
       <site name="plate_top_edge" pos="0 0.08 0.012" size="0.005" rgba="0 1 0 0.8"/>
       <site name="plate_bottom_edge" pos="0 -0.08 0.012" size="0.005" rgba="0 0 1 0.8"/>

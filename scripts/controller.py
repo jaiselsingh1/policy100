@@ -135,6 +135,8 @@ class DiffIKController:
                 self.config.pos_gain * pos_error,
                 self.config.ori_gain * ori_error
             ])
+
+            print(error)
         else:
             # position only
             J = self.config.pos_gain * jac_pos
@@ -171,8 +173,9 @@ class DiffIKController:
         # clip the maximum that the arm can move for safety checks
         norm = np.linalg.norm(dq)
         if norm > self.config.max_delta_q:
+            print(norm)
             dq *= (self.config.max_delta_q / norm)
-
+        # dq = np.clip(dq, -self.config.max_delta_q, self.config.max_delta_q)
         return dq
     
     def step_toward(

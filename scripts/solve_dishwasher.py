@@ -107,7 +107,7 @@ def main():
         site_name="link_tcp",
         config=IKConfig(
             damping=1e-3,
-            max_delta_q=0.5,
+            max_delta_q=1.0,
             pos_gain=1.0,
             ori_gain=1.0,
             nullspace_gain=0.0,
@@ -134,8 +134,10 @@ def main():
     
     # Lift: for now, just go back to hover
     # lift_pos = hover_pos
-    lift_pos = np.array([0.50, -0.22, 0.2])
-    lift_quat = np.array([0.707, 0, 0.707, 0.0])
+    lift_pos = np.array([0.50+0.02, 0.22, 0.35])
+    lift_quat = np.array([0, -0.707, 0.707, 0])
+
+    drop_pos = np.array([0.50+0.02, 0.22, 0.15])
 
     print(f"\nWaypoints:")
     print(f"  Hover: {hover_pos}")
@@ -145,17 +147,26 @@ def main():
         env.render()
 
     # Execute
-    print("\nMoving to hover...")
-    step_ik(env, ik, hover_pos, grasp_quat, steps=1000)
+    print("\nMoving to hover")
+    step_ik(env, ik, hover_pos, grasp_quat, steps=350)
 
-    print("Descending to grasp...")
-    step_ik(env, ik, grasp_pos, grasp_quat, steps=500)
+    print("Descending to grasp")
+    step_ik(env, ik, grasp_pos, grasp_quat, steps=200)
 
-    print("Closing gripper...")
+    print("Closing gripper")
     set_gripper(env, value=255.0, steps=50)
 
-    print("Lifting...")
-    step_ik(env, ik, lift_pos, lift_quat, steps=1000)
+    print("Lifting")
+    step_ik(env, ik, lift_pos, lift_quat, steps=400)
+
+    print("Lowering to rack")
+    step_ik(env, ik, drop_pos, lift_quat, steps=200)
+
+    print("open gripper")
+    set_gripper(env, value=0.0, steps=50)
+
+    print("Lifting adter drop")
+    step_ik(env, ik, lift_pos, lift_quat, steps=250)
 
     # Check result
     mujoco.mj_forward(model, data)
