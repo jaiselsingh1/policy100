@@ -150,7 +150,7 @@ def main():
     randomize_plate_pos(model, data)
     offset_angle = np.random.uniform(0, 2*np.pi)
     # Get grasp pose from the plate's quaternian
-    plate_pos, grasp_quat, approach_dir = parametrized_grasp_pose(model, data, offset_angle=-np.pi/4)
+    plate_pos, grasp_quat, approach_dir = parametrized_grasp_pose(model, data, offset_angle=offset_angle)
     # plate_pos, grasp_quat, approach_dir = get_grasp_pose_from_plate(model, data)
     
     print(f"Plate position: {plate_pos}")
