@@ -4,6 +4,7 @@ import gymnasium as gym
 import mujoco
 import policy100.envs
 import tqdm
+from scipy.spatial.transform import Rotation as R
 
 from controller import DiffIKController, IKConfig
 
@@ -68,6 +69,29 @@ def get_grasp_pose_from_plate(model, data, plate_site_name: str = "plate_center"
     
     return plate_pos, grasp_quat, approach_dir
 
+def parametrized_grasp_pose(model, data, plate_site_name: str = "plate_center", offset_angle: float = 0):
+    plate_sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, plate_site_name)
+    if plate_sid == -1:
+        raise RuntimeError(f"Site '{plate_site_name}' not found")
+    
+    mujoco.mj_forward(model, data)
+
+    # Get plate pose
+    plate_pos = data.site_xpos[plate_sid].copy()
+    plate_mat = data.site_xmat[plate_sid].reshape(3, 3)
+
+    r = R.from_euler("z", [offset_angle])
+    plate_rot = R.from_matrix(plate_mat) # represent the matrix as a rotation 
+    # compose 
+    composed_rot = r * plate_rot
+    composed_mat = composed_rot.as_matrix()[0]
+
+    approach_dir = composed_mat[:, 1] 
+    grasp_quat = approach_dir_to_quat(approach_dir, gripper_y_hint=composed_mat[:, 2])
+    
+    return plate_pos, grasp_quat, approach_dir
+
+
 
 def step_ik(env, ik, target_pos, target_quat, steps):
     model = env.unwrapped.model
@@ -117,7 +141,8 @@ def main():
     )
 
     # Get grasp pose from the plate's quaternian
-    plate_pos, grasp_quat, approach_dir = get_grasp_pose_from_plate(model, data)
+    plate_pos, grasp_quat, approach_dir = parametrized_grasp_pose(model, data, offset_angle=-3*np.pi/4)
+    # plate_pos, grasp_quat, approach_dir = get_grasp_pose_from_plate(model, data)
     
     print(f"Plate position: {plate_pos}")
     print(f"Approach direction: {approach_dir}")
@@ -148,7 +173,7 @@ def main():
 
     # Execute
     print("\nMoving to hover")
-    step_ik(env, ik, hover_pos, grasp_quat, steps=350)
+    step_ik(env, ik, hover_pos, grasp_quat, steps=700)
 
     print("Descending to grasp")
     step_ik(env, ik, grasp_pos, grasp_quat, steps=200)
