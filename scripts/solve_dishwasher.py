@@ -91,6 +91,13 @@ def parametrized_grasp_pose(model, data, plate_site_name: str = "plate_center", 
     
     return plate_pos, grasp_quat, approach_dir
 
+def randomize_plate_pos(model, data, plate_site_name = "plate_center"):
+    plate_sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, plate_site_name)
+    plate_qpos_idx = model.joint("plate_joint").qposadr[0]
+
+    plate_stand_pos = model.body("plate_stand").pos
+    data.qpos[plate_qpos_idx] += 0.05
+    plate_stand_pos[0] += 0.05
 
 
 def step_ik(env, ik, target_pos, target_quat, steps):
@@ -140,8 +147,10 @@ def main():
         ),
     )
 
+    randomize_plate_pos(model, data)
+    offset_angle = np.random.uniform(0, 2*np.pi)
     # Get grasp pose from the plate's quaternian
-    plate_pos, grasp_quat, approach_dir = parametrized_grasp_pose(model, data, offset_angle=-3*np.pi/4)
+    plate_pos, grasp_quat, approach_dir = parametrized_grasp_pose(model, data, offset_angle=-np.pi/4)
     # plate_pos, grasp_quat, approach_dir = get_grasp_pose_from_plate(model, data)
     
     print(f"Plate position: {plate_pos}")
