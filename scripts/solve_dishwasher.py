@@ -102,11 +102,15 @@ def randomize_plate_pos(model, data, plate_site_name = "plate_center"):
     plate_stand_pos[0] += 0.05
     plate_stand_pos[1] += 0.05 
 
-def get_drop_pos(model, data, slot_num, offset: float = 0.0325):
+def get_drop_pos(model, data, slot_num, reference_slot: int = 4, offset: float = 0.0325):
     drop_pos = model.body("dishwasher_rack").pos.copy()
+    bias = 0.01625
+    # reference position for the fourth slot 
     drop_pos[2] = 0.15 
+    # drop_pos[0] += 0.02 
 
-    # drop_pos[0] += 0.02 - 3*offset
+    slot_diff = slot_num - reference_slot 
+    drop_pos[0] += slot_diff * offset + bias
 
     return drop_pos
     
@@ -182,7 +186,7 @@ def main():
     lift_pos = np.array([0.50+0.02, 0.22, 0.35])
     lift_quat = np.array([0, -0.707, 0.707, 0])
 
-    drop_pos = get_drop_pos(model, data, 1)
+    drop_pos = get_drop_pos(model, data, slot_num=3)
 
     print(f"\nWaypoints:")
     print(f"  Hover: {hover_pos}")
