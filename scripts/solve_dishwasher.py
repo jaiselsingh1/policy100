@@ -97,8 +97,19 @@ def randomize_plate_pos(model, data, plate_site_name = "plate_center"):
 
     plate_stand_pos = model.body("plate_stand").pos
     data.qpos[plate_qpos_idx] += 0.05
-    plate_stand_pos[0] += 0.05
+    data.qpos[plate_qpos_idx + 1] += 0.05
 
+    plate_stand_pos[0] += 0.05
+    plate_stand_pos[1] += 0.05 
+
+def get_drop_pos(model, data, slot_num, offset: float = 0.0325):
+    drop_pos = model.body("dishwasher_rack").pos.copy()
+    drop_pos[2] = 0.15 
+
+    # drop_pos[0] += 0.02 - 3*offset
+
+    return drop_pos
+    
 
 def step_ik(env, ik, target_pos, target_quat, steps):
     model = env.unwrapped.model
@@ -150,7 +161,7 @@ def main():
     randomize_plate_pos(model, data)
     offset_angle = np.random.uniform(0, 2*np.pi)
     # Get grasp pose from the plate's quaternian
-    plate_pos, grasp_quat, approach_dir = parametrized_grasp_pose(model, data, offset_angle=offset_angle)
+    plate_pos, grasp_quat, approach_dir = parametrized_grasp_pose(model, data, offset_angle=-np.pi/4)
     # plate_pos, grasp_quat, approach_dir = get_grasp_pose_from_plate(model, data)
     
     print(f"Plate position: {plate_pos}")
@@ -171,7 +182,7 @@ def main():
     lift_pos = np.array([0.50+0.02, 0.22, 0.35])
     lift_quat = np.array([0, -0.707, 0.707, 0])
 
-    drop_pos = np.array([0.50+0.02, 0.22, 0.15])
+    drop_pos = get_drop_pos(model, data, 1)
 
     print(f"\nWaypoints:")
     print(f"  Hover: {hover_pos}")
